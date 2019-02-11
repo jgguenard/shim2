@@ -27,7 +27,7 @@ namespace Shim.Entities
     {
       get
       {
-        return (AvailableActionPoints == 0);
+        return (AvailableHitPoints == 0);
       }
     }
 

@@ -9,6 +9,7 @@ namespace Shim.Entities
     public static BearAspectTrait BearAspectTrait = new BearAspectTrait();
     public static PantherAspectTrait PantherAspectTrait = new PantherAspectTrait();
     public static DummyTrait DummyTrait = new DummyTrait();
+    public static DummyBlessing DummyBlessing = new DummyBlessing();
 
     public static void Initialize(EventManager events, BoardManager board) {
       BasicAgentTrait.Initialize(events, board);
@@ -16,6 +17,7 @@ namespace Shim.Entities
       BearAspectTrait.Initialize(events);
       DummyTrait.Initialize(events);
       PantherAspectTrait.Initialize(events);
+      DummyBlessing.Initialize(events);
     }
   }
 }

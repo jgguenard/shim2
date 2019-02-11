@@ -13,6 +13,7 @@ namespace Shim.Entities
     public event FavorGainedEventHandler FavorGained;
     public event AgentResurrectedEventHandler AgentResurrected;
     public event AgentHelpedEventHandler AgentHelped;
+    public event AuraActivatedEventHandler AuraActivated;
 
     public void OnTooManyPermanentItems(object sender, TooManyPermanentItemsEvent args)
     {
@@ -57,6 +58,11 @@ namespace Shim.Entities
     public void OnAgentHelped(object sender, AgentHelpedEvent args)
     {
       AgentHelped?.Invoke(this, args);
+    }
+
+    public void OnAuraActivated(object sender, AuraActivatedEvent args)
+    {
+      AuraActivated?.Invoke(this, args);
     }
   }
 }

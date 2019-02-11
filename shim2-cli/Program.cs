@@ -41,12 +41,29 @@ namespace ShimCLI
         TraitManager.BasicAgentTrait,
         TraitManager.PantherAspectTrait
       });
-      simulation.AddCreature(new Creature("DummyCreature")
+      simulation.AddCreature(new Creature("DummyCreature1")
       {
         BaseDefense = 0,
         BaseStrength = 1,
         FavorReward = 1
       });
+      simulation.AddCreature(new Creature("DummyCreature2")
+      {
+        BaseDefense = 0,
+        BaseStrength = 3,
+        FavorReward = 3
+      });
+      simulation.AddCreature(new Creature("DummyCreature3")
+      {
+        BaseDefense = 2,
+        BaseStrength = 2,
+        FavorReward = 2
+      });
+      simulation.AddBlessing(TraitManager.DummyBlessing, ExpirationType.Now);
+      simulation.AddBlessing(TraitManager.DummyBlessing, ExpirationType.Now);
+      simulation.AddBlessing(TraitManager.DummyBlessing, ExpirationType.Now);
+      simulation.AddBlessing(TraitManager.DummyBlessing, ExpirationType.Now);
+      simulation.AddBlessing(TraitManager.DummyBlessing, ExpirationType.Now);
       simulation.AddItem(new Item("Spear")
       {
         BaseDefense = 0,

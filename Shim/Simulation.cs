@@ -24,11 +24,11 @@ namespace Shim
     {
       _parameters = parameters;
       _state = new GameState();
-      _items = new Deck<Item>();
-      _traps = new Deck<Aura>();
-      _blessings = new Deck<Aura>();
-      _gameEvents = new Deck<Aura>();
-      _creatures = new Deck<Creature>();
+      _items = new Deck<Item>("Items");
+      _traps = new Deck<Aura>("Traps");
+      _blessings = new Deck<Aura>("Blessings");
+      _gameEvents = new Deck<Aura>("Game Events");
+      _creatures = new Deck<Creature>("Creatures");
       _agentManager = new AgentManager();
       _eventManager = new EventManager();
       _boardManager = new BoardManager();
@@ -77,10 +77,14 @@ namespace Shim
       });
     }
 
-    public void AddBlessing(Aura aura)
+    public void AddBlessing(Trait trait, ExpirationType expiration)
     {
-      aura.Type = AuraType.Blessing;
-      _blessings.Add(aura);
+      _blessings.Add(new Aura() {
+        Trait = trait,
+        Type = AuraType.Blessing,
+        Scope = ScopeType.Self,
+        Expiration = expiration
+      });
     }
 
     public void AddTrap(Aura aura)
@@ -196,13 +200,43 @@ namespace Shim
           });
           break;
       }
-      if (activeAura.Aura.Expiration != ExpirationType.Now)
+      activeAura.Targets.ForEach((Agent agent) =>
       {
-        activeAura.Targets.ForEach((Agent agent) =>
+        _agentManager.AssignTrait(aura.Trait, agent);
+        var auraActivated = new AuraActivatedEvent()
         {
-          _agentManager.AssignTrait(aura.Trait, agent);
-        });
-        _state.ActiveAuras.Add(activeAura);
+          Agent = agent,
+          Aura = aura
+        };
+        _eventManager.OnAuraActivated(this, auraActivated);
+        if (auraActivated.FavorModifier != 0)
+        {
+          if (auraActivated.FavorModifier > 0)
+          {
+            RewardFavor(agent, auraActivated.FavorModifier);
+          }
+          else
+          {
+            _agentManager.ModifyFavor(agent, auraActivated.FavorModifier);
+          }
+        }
+        if (auraActivated.HitPointsModifier != 0)
+        {
+          _agentManager.ModifyHitPoints(agent, auraActivated.HitPointsModifier);
+        }
+        if (auraActivated.ActionPointsModifier != 0)
+        {
+          _agentManager.ModifyActionPoints(agent, auraActivated.ActionPointsModifier);
+        }
+        if (auraActivated.BonusActionPointsModifier != 0)
+        {
+          _agentManager.ModifyBonusActionPoints(agent, auraActivated.BonusActionPointsModifier);
+        }
+      });
+      _state.ActiveAuras.Add(activeAura);
+      if (activeAura.Aura.Expiration == ExpirationType.Now)
+      {
+        DeactivateAura(activeAura);
       }
     }
 

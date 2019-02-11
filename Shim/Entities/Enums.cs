@@ -11,6 +11,7 @@
   {
     Now,
     Never,
+    NextUse,
     EndOfTurn,
     EndOfNextTurn,
     EndOfRound

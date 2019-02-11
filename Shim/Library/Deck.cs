@@ -7,11 +7,13 @@ namespace Shim.Library
   {
     private List<T> _discarded;
     private List<T> _available;
+    private string _name;
 
-    public Deck()
+    public Deck(string name)
     {
       _available = new List<T>();
       _discarded = new List<T>();
+      _name = name;
     }
 
     public List<T> GetAll()
@@ -30,7 +32,7 @@ namespace Shim.Library
       {
         if (_discarded.Count == 0)
         {
-          throw new Exception("Deck is empty");
+          throw new Exception($"{_name} Deck is empty");
         }
         else
         {
