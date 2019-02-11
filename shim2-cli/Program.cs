@@ -24,7 +24,8 @@ namespace ShimCLI
         DefaultBaseDefense = 0,
         DefaultBaseStrength = 0,
         DefaultMaxActionPoints = 4,
-        DefaultMaxBonusActionPoints = 1
+        DefaultMaxBonusActionPoints = 1,
+        StartingTiles = new string[] { "A1", "M13", "M1", "A13" }
       };
       Simulation simulation = new Simulation(parameters);
       simulation.AddEvent(TraitManager.DummyTrait);
@@ -45,6 +46,31 @@ namespace ShimCLI
         BaseDefense = 0,
         BaseStrength = 1,
         FavorReward = 1
+      });
+      simulation.AddItem(new Item("Spear")
+      {
+        BaseDefense = 0,
+        BaseStrength = 2
+      });
+      simulation.AddItem(new Item("Shield")
+      {
+        BaseDefense = 2,
+        BaseStrength = 0
+      });
+      simulation.AddItem(new Item("Helm")
+      {
+        BaseDefense = 1,
+        BaseStrength = 1
+      });
+      simulation.AddItem(new Item("Cape")
+      {
+        BaseDefense = 1,
+        BaseStrength = 0
+      });
+      simulation.AddItem(new Item("Hammer")
+      {
+        BaseDefense = 0,
+        BaseStrength = 1
       });
       simulation.Run();
       System.IO.File.WriteAllLines(@".\Output.yaml", simulation.GetLog());

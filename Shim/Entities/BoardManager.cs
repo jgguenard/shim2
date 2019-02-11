@@ -1,7 +1,5 @@
 ﻿using QuickGraph;
 using QuickGraph.Algorithms;
-using QuickGraph.Algorithms.Search;
-using Shim.Library;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -11,7 +9,37 @@ namespace Shim.Entities
   {
     private readonly UndirectedGraph<Tile, UndirectedEdge<Tile>> _board;
     private readonly Dictionary<string, Tile> _tiles;
-      
+
+    private IEnumerable<UndirectedEdge<Tile>> ShortestPath(Tile from, Tile to, Tile exclude = null)
+    {
+      double getDistance(UndirectedEdge<Tile> x) => (exclude != null && (exclude == x.Source || exclude == x.Target)) ? 9999 : 1;
+      var tryGetShortestPath = _board.ShortestPathsDijkstra(getDistance, from);
+      return tryGetShortestPath(to, out IEnumerable<UndirectedEdge<Tile>> path) ? path : null;
+    }
+
+    private List<Tile> GetPathFromEdges(IEnumerable<UndirectedEdge<Tile>> edges, Tile from)
+    {
+      List<Tile> path = new List<Tile>();
+      if (edges != null)
+      {
+        Tile previous = from;
+        foreach (var edge in edges)
+        {
+          if (edge.Source == previous)
+          {
+            path.Add(edge.Target);
+            previous = edge.Target;
+          }
+          else
+          {
+            path.Add(edge.Source);
+            previous = edge.Source;
+          }
+        }
+      }
+      return path;
+    }
+
     public BoardManager()
     {
       _board = new UndirectedGraph<Tile, UndirectedEdge<Tile>>(true);
@@ -30,29 +58,29 @@ namespace Shim.Entities
         for (int row = 0; row < rows; row++)
         {
           string tileName = $"{colName}{row + 1}";
-          var tile = new Tile() { Type = TitleType.Empty, Name = tileName };
+          var tile = new Tile() { Type = TileType.Empty, Name = tileName };
           _tiles[tileName] = tile;
           _board.AddVertex(tile);
         }
       }
 
       // set types
-      _tiles["E1"].Type = TitleType.Item;
-      _tiles["I1"].Type = TitleType.Trap;
-      _tiles["A5"].Type = TitleType.Healer;
-      _tiles["E5"].Type = TitleType.Creature;
-      _tiles["I5"].Type = TitleType.Gate;
+      _tiles["E1"].Type = TileType.Item;
+      _tiles["I1"].Type = TileType.Trap;
+      _tiles["A5"].Type = TileType.Healer;
+      _tiles["E5"].Type = TileType.Creature;
+      _tiles["I5"].Type = TileType.Gate;
       _tiles["I5"].StringValue = "E9";
-      _tiles["M5"].Type = TitleType.Discovery;
+      _tiles["M5"].Type = TileType.Discovery;
       _tiles["M5"].IntValue = 1;
-      _tiles["A9"].Type = TitleType.Discovery;
+      _tiles["A9"].Type = TileType.Discovery;
       _tiles["A9"].IntValue = 1;
-      _tiles["E9"].Type = TitleType.Gate;
+      _tiles["E9"].Type = TileType.Gate;
       _tiles["E9"].StringValue = "I5";
-      _tiles["I9"].Type = TitleType.Blessing;
-      _tiles["M9"].Type = TitleType.Item;
-      _tiles["E13"].Type = TitleType.Healer;
-      _tiles["I13"].Type = TitleType.Creature;
+      _tiles["I9"].Type = TileType.Blessing;
+      _tiles["M9"].Type = TileType.Item;
+      _tiles["E13"].Type = TileType.Healer;
+      _tiles["I13"].Type = TileType.Creature;
 
       // connect nodes
       for (int i = 1; i < rows; i++)
@@ -73,55 +101,48 @@ namespace Shim.Entities
       }
     }
 
-    public IEnumerable<Tile> GetPath(Tile from, Tile to)
+    public List<Tile> GetPath(Tile from, Tile to)
     {
       List<Tile> path = new List<Tile>();
-      var shortestPath = GetShortestPath(from, to);
-      if (shortestPath != null)
-      {
-        Tile previous = from;
-        foreach (var edge in shortestPath)
-        {
-          if (edge.Source == previous)
-          {
-            path.Add(edge.Target);
-            previous = edge.Target;
-          }
-          else
-          {
-            path.Add(edge.Source);
-            previous = edge.Source;
-          }
-        }
-      }
-      return path;
+      var shortestPath = ShortestPath(from, to);
+      return GetPathFromEdges(shortestPath, from);
     }
 
-    public IEnumerable<Tile> GetReachableValuableTiles(Tile from, int distance, Tile previousTile = null)
+    public List<List<Tile>> ReachablePointsOfInterest(Tile from, int distance, Tile previousTile = null)
     {
-      List<Tile> tiles = new List<Tile>();
-      var otherNonEmptyTiles = _tiles.Values.Where((Tile t) => t.Type != TitleType.Empty && t != from).ToList();
+      List<List<Tile>> paths = new List<List<Tile>>();
+      var otherNonEmptyTiles = _tiles.Values.Where((Tile t) => t.Type != TileType.Empty && t != from).ToList();
       otherNonEmptyTiles.ForEach((Tile to) =>
       {
-        var path = GetShortestPath(from, to, previousTile);
+        var path = ShortestPath(from, to, previousTile);
         if (path.Count() <= distance)
         {
-          tiles.Add(to);
+          paths.Add(GetPathFromEdges(path, from));
         }
       });
-      return tiles;
+      return paths;
     }
 
     public Tile GetTile(string name)
     {
       return _tiles[name];
     }
-    
-    private IEnumerable<UndirectedEdge<Tile>> GetShortestPath(Tile from, Tile to, Tile exclude = null)
+
+    public List<Tile> ShortestPathToTileType(Tile from, TileType type)
     {
-      double getDistance(UndirectedEdge<Tile> x) => (exclude != null && (exclude == x.Source || exclude == x.Target)) ? 9999 : 1;
-      var tryGetShortestPath = _board.ShortestPathsDijkstra(getDistance, from);
-      return tryGetShortestPath(to, out IEnumerable<UndirectedEdge<Tile>> path) ? path : null;
+      var tiles = _tiles.Values.Where((Tile t) => t.Type == type).ToList();
+      IEnumerable<Tile> nearestPath = null;
+      int minDistance = 9999;
+      tiles.ForEach(t =>
+      {
+        var path = GetPath(from, t);
+        if (nearestPath == null || nearestPath.Count() < minDistance)
+        {
+          nearestPath = path;
+          minDistance = nearestPath.Count();
+        }
+      });
+      return nearestPath.ToList();
     }
   }
 }

@@ -14,6 +14,7 @@ namespace Shim.Entities
     public int Favor { get; set; }
     public List<Item> Items { get; set; }
     public Tile Position { get; set; }
+    public Tile PreviousPosition { get; set; }
     public int PermanentItemCount
     {
       get

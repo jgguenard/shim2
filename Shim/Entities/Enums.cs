@@ -16,7 +16,7 @@
     EndOfRound
   }
 
-  public enum TitleType
+  public enum TileType
   {
     Empty,
     Creature,
@@ -35,5 +35,12 @@
     Move,
     UseItem,
     Stop
+  }
+
+  public enum AuraType
+  {
+    GameEvent,
+    Blessing,
+    Other
   }
 }

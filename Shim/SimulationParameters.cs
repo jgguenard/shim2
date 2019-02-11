@@ -1,4 +1,6 @@
-﻿namespace Shim
+﻿using System.Collections.Generic;
+
+namespace Shim
 {
   public class SimulationParameters
   {
@@ -17,5 +19,6 @@
     public int DefaultMaxBonusActionPoints { get; set; }
     public int DefaultBaseDefense { get; set; }
     public int DefaultBaseStrength { get; set; }
+    public string[] StartingTiles { get; set; }
   }
 }

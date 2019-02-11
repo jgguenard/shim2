@@ -12,23 +12,18 @@ namespace Shim
     public AgentManager _agentManager;
     public BoardManager _boardManager;
     private SimulationParameters _parameters;
-    private readonly List<Agent> _agents;
+    private readonly GameState _state;
+    private bool _done;
     private readonly Deck<Item> _items;
     private readonly Deck<Creature> _creatures;
     private readonly Deck<Aura> _gameEvents;
     private readonly Deck<Aura> _traps;
     private readonly Deck<Aura> _blessings;
-    private readonly List<ActiveAura> _activeAuras;
-    private int _round;
-    private int _turn;
-    private Agent _turnAgent;
-    private bool _done;
 
     public Simulation(SimulationParameters parameters)
     {
       _parameters = parameters;
-      _activeAuras = new List<ActiveAura>();
-      _agents = new List<Agent>();
+      _state = new GameState();
       _items = new Deck<Item>();
       _traps = new Deck<Aura>();
       _blessings = new Deck<Aura>();
@@ -37,8 +32,6 @@ namespace Shim
       _agentManager = new AgentManager();
       _eventManager = new EventManager();
       _boardManager = new BoardManager();
-      _round = 1;
-      _turn = 1;
       _done = false;
       Logger.Init();
       TraitManager.Initialize(_eventManager, _boardManager);
@@ -59,7 +52,7 @@ namespace Shim
           _agentManager.AssignTrait(trait, agent);
         }
       }
-      _agents.Add(agent); 
+      _state.Agents.Add(agent);
       Logger.Log($"Agent {name} was added to simulation");
     }
 
@@ -77,6 +70,7 @@ namespace Shim
     {
       _gameEvents.Add(new Aura()
       {
+        Type = AuraType.GameEvent,
         Expiration = ExpirationType.EndOfRound,
         Scope = ScopeType.All,
         Trait = trait
@@ -85,6 +79,7 @@ namespace Shim
 
     public void AddBlessing(Aura aura)
     {
+      aura.Type = AuraType.Blessing;
       _blessings.Add(aura);
     }
 
@@ -107,9 +102,9 @@ namespace Shim
         {
           throw new Exception($"Cannot run the same simulation twice");
         }
-        if (_agents.Count < _parameters.MinAgents || _agents.Count > _parameters.MaxAgents)
+        if (_state.Agents.Count < _parameters.MinAgents || _state.Agents.Count > _parameters.MaxAgents)
         {
-          throw new Exception($"Expecting between {_parameters.MinAgents} and {_parameters.MaxAgents} agents but got {_agents.Count}");
+          throw new Exception($"Expecting between {_parameters.MinAgents} and {_parameters.MaxAgents} agents but got {_state.Agents.Count}");
         }
 
         // Shuffle decks
@@ -121,17 +116,24 @@ namespace Shim
 
         // Initialize agents
         Logger.Log($"Initializing agents");
-        _agents.ForEach(agent =>
+        for (var i = 0; i < _state.Agents.Count; i++)
         {
+          Agent agent = _state.Agents[i];
+          string startingTileId = _parameters.StartingTiles[i];
+          if (startingTileId == null)
+          {
+            throw new Exception($"No starting tile for Agent {agent.Name}");
+          }
           _agentManager.ResetHitPoints(agent);
+          _agentManager.SetPosition(agent, _boardManager.GetTile(startingTileId));
           _eventManager.OnAgentInit(this, new AgentInitEvent() { NewAgent = agent });
-        });
+        }
 
         // Starting item draft
         if (_parameters.StartingItemEnabled)
         {
           Logger.Log($"Starting items draft");
-          _agents.ForEach(agent => DrawItem(agent));
+          _state.Agents.ForEach(agent => DrawItem(agent));
         }
 
         // Start main loop
@@ -140,14 +142,13 @@ namespace Shim
           // Set a new active event
           DrawEvent();
           // Play turns
-          for (_turn = 1; _turn <= _agents.Count; _turn++)
+          for (_state.Turn = 1; _state.Turn <= _state.Agents.Count; _state.Turn++)
           {
-            _turnAgent = _agents[_turn - 1];
             ExecuteTurn();
             CheckActiveAurasExpiration();
           }
           // Prepare next round
-          if (++_round > _parameters.MaxRounds)
+          if (++_state.Round > _parameters.MaxRounds)
           {
             _done = true;
           }
@@ -164,8 +165,8 @@ namespace Shim
       ActiveAura activeAura = new ActiveAura()
       {
         Aura = aura,
-        ActivationRound = _round,
-        ActivationTurn = _turn
+        ActivationRound = _state.Round,
+        ActivationTurn = _state.Turn
       };
       if (activator != null)
       {
@@ -180,7 +181,7 @@ namespace Shim
           }
           break;
         case ScopeType.Others:
-          _agents.ForEach((Agent agent) =>
+          _state.Agents.ForEach((Agent agent) =>
           {
             if (agent != activator)
             {
@@ -189,7 +190,7 @@ namespace Shim
           });
           break;
         case ScopeType.All:
-          _agents.ForEach((Agent agent) =>
+          _state.Agents.ForEach((Agent agent) =>
           {
             activeAura.Targets.Add(agent);
           });
@@ -201,33 +202,42 @@ namespace Shim
         {
           _agentManager.AssignTrait(aura.Trait, agent);
         });
-        _activeAuras.Add(activeAura);
+        _state.ActiveAuras.Add(activeAura);
       }
     }
 
     private void CheckActiveAurasExpiration()
     {
-      for (int i = _activeAuras.Count - 1; i >= 0; i--)
+      for (int i = _state.ActiveAuras.Count - 1; i >= 0; i--)
       {
-        ActiveAura activeAura = _activeAuras[i];
+        ActiveAura activeAura = _state.ActiveAuras[i];
         ExpirationType type = activeAura.Aura.Expiration;
-        bool isActivatorTurn = activeAura.Activator == _turnAgent;
-        bool isEndOfActivatorTurn = (type == ExpirationType.EndOfTurn && isActivatorTurn && _turn == activeAura.ActivationTurn);
-        bool isEndOfActivatorNextTurn = (type == ExpirationType.EndOfNextTurn && isActivatorTurn && _round > activeAura.ActivationRound);
-        bool isEndOfRound = (type == ExpirationType.EndOfRound && _turn == _agents.Count);
+        bool isActivatorTurn = activeAura.Activator == _state.TurnAgent;
+        bool isEndOfActivatorTurn = (type == ExpirationType.EndOfTurn && isActivatorTurn && _state.Turn == activeAura.ActivationTurn);
+        bool isEndOfActivatorNextTurn = (type == ExpirationType.EndOfNextTurn && isActivatorTurn && _state.Round > activeAura.ActivationRound);
+        bool isEndOfRound = (type == ExpirationType.EndOfRound && _state.Turn == _state.Agents.Count);
         if (isEndOfActivatorTurn || isEndOfActivatorNextTurn || isEndOfRound)
         {
-          activeAura.Targets.ForEach((Agent agent) =>
-          {
-            _agentManager.UnassignTrait(activeAura.Aura.Trait, agent);
-          });
-          if (activeAura.IsGameEvent)
-          {
-            _gameEvents.Discard(activeAura.Aura);
-          }
-          _activeAuras.Remove(activeAura);
+          DeactivateAura(activeAura);
         }
       }
+    }
+
+    private void DeactivateAura(ActiveAura activeAura)
+    {
+      activeAura.Targets.ForEach((Agent agent) =>
+      {
+        _agentManager.UnassignTrait(activeAura.Aura.Trait, agent);
+      });
+      if (activeAura.Aura.Type == AuraType.GameEvent)
+      {
+        _gameEvents.Discard(activeAura.Aura);
+      }
+      else if (activeAura.Aura.Type == AuraType.Blessing)
+      {
+        _blessings.Discard(activeAura.Aura);
+      }
+      _state.ActiveAuras.Remove(activeAura);
     }
 
     private void DrawItem(Agent agent)
@@ -277,8 +287,13 @@ namespace Shim
 
     private void DrawBlessing(Agent agent)
     {
-      Aura trap = _blessings.Draw();
-      ActivateAura(trap, agent);
+      Aura blessing = _blessings.Draw();
+      var activeBlessings = _state.GetAgentActiveAurasByType(agent, AuraType.Blessing);
+      if (activeBlessings.Count == _parameters.MaxActiveBlessingPerAgent)
+      {
+        DeactivateAura(activeBlessings[0]);
+      }
+      ActivateAura(blessing, agent);
     }
 
     private void DrawCreature(Agent agent)
@@ -377,25 +392,25 @@ namespace Shim
       _agentManager.SetPosition(move.Agent, move.Tile);
       switch (move.Tile.Type)
       {
-        case TitleType.Blessing:
+        case TileType.Blessing:
           DrawBlessing(move.Agent);
           break;
-        case TitleType.Creature:
+        case TileType.Creature:
           DrawCreature(move.Agent);
           break;
-        case TitleType.Discovery:
+        case TileType.Discovery:
           RewardFavor(move.Agent, tile.IntValue);
           break;
-        case TitleType.Gate:
+        case TileType.Gate:
           EnterGate(move.Agent, tile.StringValue);
           break;
-        case TitleType.Healer:
+        case TileType.Healer:
           VisitHealer(move.Agent);
           break;
-        case TitleType.Item:
+        case TileType.Item:
           DrawItem(move.Agent);
           break;
-        case TitleType.Trap:
+        case TileType.Trap:
           DrawTrap(move.Agent);
           break;
       }
@@ -448,8 +463,8 @@ namespace Shim
 
     private void ExecuteTurn()
     {
-      Logger.Log($"Turn: {_turn} ({_agents[_turn-1].Name}) of round {_round}");
-      _agentManager.ResetActionPoints(_turnAgent);
+      Logger.Log($"Turn: {_state.Turn} ({_state.Agents[_state.Turn-1].Name}) of round {_state.Round}");
+      _agentManager.ResetActionPoints(_state.TurnAgent);
       bool endOfTurn = false;
       int maxActions = _parameters.MaxActionsPerTurn;
       int actionsDone = 0;
@@ -457,8 +472,10 @@ namespace Shim
       {
         var nextAction = new TurnActionEvent()
         {
+          Parameters = _parameters,
+          GameState = _state,
           Type = TurnActionType.Undecided,
-          Source = _turnAgent 
+          Source = _state.TurnAgent
         };
         _eventManager.OnTurnAction(this, nextAction);
         switch (nextAction.Type)
@@ -473,22 +490,22 @@ namespace Shim
             UseItem(nextAction.Item, nextAction.Source, nextAction.Target);
             break;
           case TurnActionType.Stop:
-            Logger.Log($"Agent {_turnAgent.Name} has decided to end his turn");
+            Logger.Log($"Agent {_state.TurnAgent.Name} has decided to end his turn");
             endOfTurn = true;
             break;
           case TurnActionType.Undecided:
-            Logger.Log($"Agent {_turnAgent.Name} couldn't decide what to do next");
+            Logger.Log($"Agent {_state.TurnAgent.Name} couldn't decide what to do next");
             endOfTurn = true;
             break;
         }
         actionsDone++;
         if (actionsDone > maxActions)
         {
-          Logger.Log($"Agent {_turnAgent.Name} has done too many actions during his turn ({maxActions})");
+          Logger.Log($"Agent {_state.TurnAgent.Name} has done too many actions during his turn ({maxActions})");
           endOfTurn = true;
         }
       }
-      Logger.Log($"End of turn: {_turn} ({_agents[_turn - 1].Name}) of round {_round}");
+      Logger.Log($"End of turn: {_state.Turn} ({_state.Agents[_state.Turn - 1].Name}) of round {_state.Round}");
     }
   }
 }

@@ -49,6 +49,10 @@ namespace Shim.Entities
 
     public void SetPosition(Agent agent, Tile tile)
     {
+      if (agent.Position != null)
+      {
+        agent.PreviousPosition = agent.Position;
+      }
       agent.Position = tile;
       Logger.Log($"Agent {agent.Name} moves to {tile.Name}");
     }
