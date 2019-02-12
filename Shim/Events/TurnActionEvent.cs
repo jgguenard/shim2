@@ -11,7 +11,7 @@ namespace Shim.Events
     public Agent Target { get; set; }
     public Item Item { get; set; }
     public Tile Tile { get; set; }
-    public SimulationParameters Parameters { get; set; }
+    public GameParameters Parameters { get; set; }
   }
 
   public delegate void TurnActionEventHandler(object sender, TurnActionEvent e);

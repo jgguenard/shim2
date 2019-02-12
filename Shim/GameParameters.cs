@@ -2,7 +2,7 @@
 
 namespace Shim
 {
-  public class SimulationParameters
+  public class GameParameters
   {
     public int MaxRounds { get; set; }
     public int MaxPermanentItemsPerAgent { get; set; }

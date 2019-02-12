@@ -1,14 +1,17 @@
 ﻿using System;
+using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using Shim;
 using Shim.Entities;
+using Simulator.Entities;
 
-namespace ShimCLI
+namespace Simulator
 {
   class Program
   {
     static void Main(string[] args)
     {
-      SimulationParameters parameters = new SimulationParameters()
+      GameParameters parameters = new GameParameters()
       {
         MaxRounds = 10,
         MaxActiveBlessingPerAgent = 1,
@@ -27,7 +30,7 @@ namespace ShimCLI
         DefaultMaxBonusActionPoints = 1,
         StartingTiles = new string[] { "A1", "M13", "M1", "A13" }
       };
-      Simulation simulation = new Simulation(parameters);
+      Game simulation = new Game(parameters);
       simulation.AddEvent(TraitManager.DummyTrait);
       simulation.AddAgent("Bear", new Trait[] {
         TraitManager.BasicAgentTrait,
@@ -91,6 +94,23 @@ namespace ShimCLI
       });
       simulation.Run();
       System.IO.File.WriteAllLines(@".\Output.yaml", simulation.GetLog());
+
+      var state = simulation.GetState();
+
+      using (var db = new SimulationContext())
+      {
+        db.Database.OpenConnection();
+        db.Database.EnsureCreated();
+        db.Database.Migrate();
+        db.Simulations.Add(new Simulation()
+        {
+          Id = Guid.NewGuid().ToString(),
+          TotalAgents = state.Agents.Count,
+          TotalRounds = state.Round,
+          Parameters = JsonConvert.SerializeObject(parameters)
+        });
+        db.SaveChanges();
+      }
       Console.ReadKey();
     }
   }

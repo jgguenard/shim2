@@ -6,21 +6,21 @@ using Shim.Events;
 
 namespace Shim
 {
-  public class Simulation
+  public class Game
   {
-    public EventManager _eventManager;
-    public AgentManager _agentManager;
-    public BoardManager _boardManager;
-    private SimulationParameters _parameters;
+    private readonly EventManager _eventManager;
+    private readonly AgentManager _agentManager;
+    private readonly BoardManager _boardManager;
+    private readonly GameParameters _parameters;
     private readonly GameState _state;
-    private bool _done;
     private readonly Deck<Item> _items;
     private readonly Deck<Creature> _creatures;
     private readonly Deck<Aura> _gameEvents;
     private readonly Deck<Aura> _traps;
     private readonly Deck<Aura> _blessings;
+    private bool _done;
 
-    public Simulation(SimulationParameters parameters)
+    public Game(GameParameters parameters)
     {
       _parameters = parameters;
       _state = new GameState();
@@ -36,6 +36,11 @@ namespace Shim
       Logger.Init();
       TraitManager.Initialize(_eventManager, _boardManager);
       _boardManager.Initialize();
+    }
+
+    public GameState GetState()
+    {
+      return _state;
     }
 
     public void AddAgent(string name, Trait[] initialTraits = null)
