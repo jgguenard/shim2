@@ -7,17 +7,17 @@ namespace Shim.Traits
   {
     public const int ACTION_POINTS_MODIFIER = 1;
 
-    public override void Initialize(EventManager events)
+    public PantherAspectTrait() : base()
     {
-      events.AgentInit += OnAgentInit;
+      EventManager.AgentInit += OnAgentInit;
     }
 
     public void OnAgentInit(object sender, AgentInitEvent e)
     {
-      if (e.NewAgent.HasTrait(this))
+      if (e.Agent.HasTrait(this))
       {
-        e.NewAgent.MaxActionPoints += ACTION_POINTS_MODIFIER;
-        Log(this, $"{e.NewAgent.Name}'s has now {e.NewAgent.MaxActionPoints} max action points");
+        e.MaxActionPoints += ACTION_POINTS_MODIFIER;
+        Log(this, $"{e.Agent.Name}'s has now {e.Agent.MaxActionPoints} max action points");
       }
     }
   }

@@ -1,22 +1,23 @@
-﻿using Shim.Library;
+﻿using Shim.Events;
+using Shim.Library;
 
 namespace Shim.Entities
 {
-  public class AgentManager
+  public static class AgentManager
   {
-    public void AssignItem(Item item, Agent agent)
+    public static void AssignItem(Item item, Agent agent)
     {
       agent.Items.Add(item);
       Logger.Log($"Item {item.Name} was added to agent {agent.Name}'s inventory");
     }
 
-    public void UnassignItem(Item item, Agent agent)
+    public static void UnassignItem(Item item, Agent agent)
     {
       agent.Items.Remove(item);
       Logger.Log($"Item {item.Name} was removed from agent {agent.Name}'s inventory");
     }
 
-    public void AssignTrait(Trait trait, Agent agent)
+    public static void AssignTrait(Trait trait, Agent agent)
     {
       if (trait.Stackable || !agent.HasTrait(trait))
       {
@@ -25,7 +26,7 @@ namespace Shim.Entities
       }
     }
 
-    public void UnassignTrait(Trait trait, Agent agent)
+    public static void UnassignTrait(Trait trait, Agent agent)
     {
       if (agent.HasTrait(trait))
       {
@@ -34,20 +35,20 @@ namespace Shim.Entities
       }
     }
 
-    public void ResetActionPoints(Agent agent)
+    public static void ResetActionPoints(Agent agent)
     {
       agent.AvailableActionPoints = agent.MaxActionPoints;
       agent.AvailableBonusActionPoints = agent.MaxBonusActionPoints;
       Logger.Log($"Actions points of {agent.Name} are reset (value: {agent.AvailableActionPoints}/{agent.AvailableBonusActionPoints})");
     }
 
-    public void ResetHitPoints(Agent agent)
+    public static void ResetHitPoints(Agent agent)
     {
       agent.AvailableHitPoints = agent.MaxHitPoints;
       Logger.Log($"Hit Points of {agent.Name} are reset (value: {agent.AvailableHitPoints})");
     }
 
-    public void SetPosition(Agent agent, Tile tile)
+    public static void SetPosition(Agent agent, Tile tile)
     {
       if (agent.Position != null)
       {
@@ -57,7 +58,7 @@ namespace Shim.Entities
       Logger.Log($"Agent {agent.Name} moves to {tile.Name}");
     }
 
-    public int ModifyActionPoints(Agent agent, int amount)
+    public static int ModifyActionPoints(Agent agent, int amount)
     {
       int amountGained = ValidateStat(agent.AvailableActionPoints, amount, agent.MaxActionPoints);
       if (amountGained != 0)
@@ -75,7 +76,7 @@ namespace Shim.Entities
       return amountGained;
     }
 
-    public int ModifyBonusActionPoints(Agent agent, int amount)
+    public static int ModifyBonusActionPoints(Agent agent, int amount)
     {
       int amountGained = ValidateStat(agent.AvailableBonusActionPoints, amount, agent.MaxBonusActionPoints);
       if (amountGained != 0)
@@ -93,7 +94,7 @@ namespace Shim.Entities
       return amountGained;
     }
 
-    public int ModifyHitPoints(Agent agent, int amount)
+    public static int ModifyHitPoints(Agent agent, int amount)
     {
       int amountGained = ValidateStat(agent.AvailableHitPoints, amount, agent.MaxHitPoints);
       if (amountGained != 0)
@@ -111,25 +112,52 @@ namespace Shim.Entities
       return amountGained;
     }
 
-    public int ModifyFavor(Agent agent, int amount)
+    public static int ModifyFavor(Agent agent, int amount)
     {
       int amountGained = ValidateStat(agent.Favor, amount, 9999);
       if (amountGained != 0)
       {
-        agent.Favor += amountGained;
         if (amount > 0)
         {
+          FavorGainedEvent favorGained = new FavorGainedEvent()
+          {
+            Agent = agent,
+            Amount = amount
+          };
+          EventManager.OnFavorGained(agent, favorGained);
+          agent.Favor += favorGained.Amount;
           Logger.Log($"Agent {agent.Name} gained {amountGained} favor (value: {agent.Favor})");
         }
         else
         {
+          agent.Favor += amountGained;
           Logger.Log($"Agent {agent.Name} lost {amountGained} favor (value: {agent.Favor})");
         }
       }
       return amountGained;
     }
 
-    private int ValidateStat(int value, int increment, int maxValue)
+    public static void ModifyBaseStrength(Agent agent, int amount)
+    {
+      agent.BaseStrength += amount;
+    }
+
+    public static void ModifyBaseDefense(Agent agent, int amount)
+    {
+      agent.BaseStrength += amount;
+    }
+
+    public static void ModifyMaxBonusActionPoints(Agent agent, int amount)
+    {
+      agent.MaxBonusActionPoints += amount;
+    }
+
+    public static void ModifyMaxActionPoints(Agent agent, int amount)
+    {
+      agent.MaxActionPoints += amount;
+    }
+
+    private static int ValidateStat(int value, int increment, int maxValue)
     {
       int nextValue = value + increment;
       if (nextValue < 0)

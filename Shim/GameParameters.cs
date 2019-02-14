@@ -20,5 +20,6 @@ namespace Shim
     public int DefaultBaseDefense { get; set; }
     public int DefaultBaseStrength { get; set; }
     public string[] StartingTiles { get; set; }
+    public int AgentAttackBaseRange { get; set; }
   }
 }

@@ -5,51 +5,18 @@ using System.Linq;
 
 namespace Shim.Entities
 {
-  public class BoardManager
+  public static class BoardManager
   {
-    private readonly UndirectedGraph<Tile, UndirectedEdge<Tile>> _board;
-    private readonly Dictionary<string, Tile> _tiles;
+    private static UndirectedGraph<Tile, UndirectedEdge<Tile>> _board;
+    private static Dictionary<string, Tile> _tiles;
 
-    private IEnumerable<UndirectedEdge<Tile>> ShortestPath(Tile from, Tile to, Tile exclude = null)
-    {
-      double getDistance(UndirectedEdge<Tile> x) => (exclude != null && (exclude == x.Source || exclude == x.Target)) ? 9999 : 1;
-      var tryGetShortestPath = _board.ShortestPathsDijkstra(getDistance, from);
-      return tryGetShortestPath(to, out IEnumerable<UndirectedEdge<Tile>> path) ? path : null;
-    }
-
-    private List<Tile> GetPathFromEdges(IEnumerable<UndirectedEdge<Tile>> edges, Tile from)
-    {
-      List<Tile> path = new List<Tile>();
-      if (edges != null)
-      {
-        Tile previous = from;
-        foreach (var edge in edges)
-        {
-          if (edge.Source == previous)
-          {
-            path.Add(edge.Target);
-            previous = edge.Target;
-          }
-          else
-          {
-            path.Add(edge.Source);
-            previous = edge.Source;
-          }
-        }
-      }
-      return path;
-    }
-
-    public BoardManager()
-    {
-      _board = new UndirectedGraph<Tile, UndirectedEdge<Tile>>(true);
-      _tiles = new Dictionary<string, Tile>();
-    }
-
-    public void Initialize()
+    public static void Initialize()
     {
       int cols = 13;
       int rows = 13;
+
+      _board = new UndirectedGraph<Tile, UndirectedEdge<Tile>>(true);
+      _tiles = new Dictionary<string, Tile>();
 
       // generate tiles
       for (int col = 0; col < cols; col++)
@@ -100,15 +67,13 @@ namespace Shim.Entities
         _board.AddEdge(new UndirectedEdge<Tile>(_tiles[$"{col1Name}13"], _tiles[$"{col2Name}13"]));
       }
     }
-
-    public List<Tile> GetPath(Tile from, Tile to)
+    public static List<Tile> GetPath(Tile from, Tile to)
     {
       List<Tile> path = new List<Tile>();
       var shortestPath = ShortestPath(from, to);
       return GetPathFromEdges(shortestPath, from);
     }
-
-    public List<List<Tile>> ReachablePointsOfInterest(Tile from, int distance, Tile previousTile = null)
+    public static List<List<Tile>> ReachablePointsOfInterest(Tile from, int distance, Tile previousTile = null)
     {
       List<List<Tile>> paths = new List<List<Tile>>();
       var otherNonEmptyTiles = _tiles.Values.Where((Tile t) => t.Type != TileType.Empty && t != from).ToList();
@@ -122,13 +87,11 @@ namespace Shim.Entities
       });
       return paths;
     }
-
-    public Tile GetTile(string name)
+    public static Tile GetTile(string name)
     {
       return _tiles[name];
     }
-
-    public List<Tile> ShortestPathToTileType(Tile from, TileType type)
+    public static List<Tile> ShortestPathToTileType(Tile from, TileType type)
     {
       var tiles = _tiles.Values.Where((Tile t) => t.Type == type).ToList();
       IEnumerable<Tile> nearestPath = null;
@@ -143,6 +106,35 @@ namespace Shim.Entities
         }
       });
       return nearestPath.ToList();
+    }
+
+    private static IEnumerable<UndirectedEdge<Tile>> ShortestPath(Tile from, Tile to, Tile exclude = null)
+    {
+      double getDistance(UndirectedEdge<Tile> x) => (exclude != null && (exclude == x.Source || exclude == x.Target)) ? 9999 : 1;
+      var tryGetShortestPath = _board.ShortestPathsDijkstra(getDistance, from);
+      return tryGetShortestPath(to, out IEnumerable<UndirectedEdge<Tile>> path) ? path : null;
+    }
+    private static List<Tile> GetPathFromEdges(IEnumerable<UndirectedEdge<Tile>> edges, Tile from)
+    {
+      List<Tile> path = new List<Tile>();
+      if (edges != null)
+      {
+        Tile previous = from;
+        foreach (var edge in edges)
+        {
+          if (edge.Source == previous)
+          {
+            path.Add(edge.Target);
+            previous = edge.Target;
+          }
+          else
+          {
+            path.Add(edge.Source);
+            previous = edge.Source;
+          }
+        }
+      }
+      return path;
     }
   }
 }

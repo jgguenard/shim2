@@ -28,7 +28,8 @@ namespace Simulator
         DefaultBaseStrength = 0,
         DefaultMaxActionPoints = 4,
         DefaultMaxBonusActionPoints = 1,
-        StartingTiles = new string[] { "A1", "M13", "M1", "A13" }
+        StartingTiles = new string[] { "A1", "M13", "M1", "A13" },
+        AgentAttackBaseRange = 4
       };
       Game simulation = new Game(parameters);
       simulation.AddEvent(TraitManager.DummyTrait);

@@ -44,4 +44,10 @@
     Blessing,
     Other
   }
+
+  public enum StatType
+  {
+    Strength,
+    Defense
+  }
 }

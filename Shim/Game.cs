@@ -8,9 +8,6 @@ namespace Shim
 {
   public class Game
   {
-    private readonly EventManager _eventManager;
-    private readonly AgentManager _agentManager;
-    private readonly BoardManager _boardManager;
     private readonly GameParameters _parameters;
     private readonly GameState _state;
     private readonly Deck<Item> _items;
@@ -29,20 +26,14 @@ namespace Shim
       _blessings = new Deck<Aura>("Blessings");
       _gameEvents = new Deck<Aura>("Game Events");
       _creatures = new Deck<Creature>("Creatures");
-      _agentManager = new AgentManager();
-      _eventManager = new EventManager();
-      _boardManager = new BoardManager();
       _done = false;
       Logger.Init();
-      TraitManager.Initialize(_eventManager, _boardManager);
-      _boardManager.Initialize();
+      BoardManager.Initialize();
     }
-
     public GameState GetState()
     {
       return _state;
     }
-
     public void AddAgent(string name, Trait[] initialTraits = null)
     {
       Agent agent = new Agent(name) {
@@ -54,23 +45,20 @@ namespace Shim
       {
         foreach (Trait trait in initialTraits)
         {
-          _agentManager.AssignTrait(trait, agent);
+          AgentManager.AssignTrait(trait, agent);
         }
       }
       _state.Agents.Add(agent);
       Logger.Log($"Agent {name} was added to simulation");
     }
-
     public void AddItem(Item item)
     {
       _items.Add(item);
     }
-
     public void AddCreature(Creature creature)
     {
       _creatures.Add(creature);
     }
-
     public void AddEvent(Trait trait)
     {
       _gameEvents.Add(new Aura()
@@ -81,7 +69,6 @@ namespace Shim
         Trait = trait
       });
     }
-
     public void AddBlessing(Trait trait, ExpirationType expiration)
     {
       _blessings.Add(new Aura() {
@@ -91,17 +78,14 @@ namespace Shim
         Expiration = expiration
       });
     }
-
     public void AddTrap(Aura aura)
     {
       _traps.Add(aura);
     }
-
     public List<string> GetLog()
     {
       return Logger.Lines;
     }
-
     public void Run()
     {
       try
@@ -131,11 +115,9 @@ namespace Shim
           string startingTileId = _parameters.StartingTiles[i];
           if (startingTileId == null)
           {
-            throw new Exception($"No starting tile for Agent {agent.Name}");
+            throw new Exception($"No starting tile for Agent {_state.Agents[i].Name}");
           }
-          _agentManager.ResetHitPoints(agent);
-          _agentManager.SetPosition(agent, _boardManager.GetTile(startingTileId));
-          _eventManager.OnAgentInit(this, new AgentInitEvent() { NewAgent = agent });
+          InitializeAgent(agent, BoardManager.GetTile(startingTileId));
         }
 
         // Starting item draft
@@ -168,7 +150,24 @@ namespace Shim
         Logger.Log($"Exception: {ex.Message}");
       }
     }
-
+    private void InitializeAgent(Agent agent, Tile position)
+    {
+      AgentInitEvent agentInit = new AgentInitEvent()
+      {
+        Agent = agent,
+        BaseStrength = _parameters.DefaultBaseStrength,
+        BaseDefense = _parameters.DefaultBaseDefense,
+        MaxActionPoints = _parameters.DefaultMaxActionPoints,
+        MaxBonusActionPoints = _parameters.DefaultMaxBonusActionPoints
+      };
+      EventManager.OnAgentInit(this, agentInit);
+      AgentManager.ModifyBaseStrength(agent, agentInit.BaseStrength);
+      AgentManager.ModifyBaseDefense(agent, agentInit.BaseDefense);
+      AgentManager.ModifyMaxActionPoints(agent, agentInit.MaxActionPoints);
+      AgentManager.ModifyMaxBonusActionPoints(agent, agentInit.MaxBonusActionPoints);
+      AgentManager.ResetHitPoints(agent);
+      AgentManager.SetPosition(agent, position);
+    }
     private void ActivateAura(Aura aura, Agent activator = null)
     {
       ActiveAura activeAura = new ActiveAura()
@@ -207,35 +206,28 @@ namespace Shim
       }
       activeAura.Targets.ForEach((Agent agent) =>
       {
-        _agentManager.AssignTrait(aura.Trait, agent);
+        AgentManager.AssignTrait(aura.Trait, agent);
         var auraActivated = new AuraActivatedEvent()
         {
           Agent = agent,
           Aura = aura
         };
-        _eventManager.OnAuraActivated(this, auraActivated);
+        EventManager.OnAuraActivated(this, auraActivated);
         if (auraActivated.FavorModifier != 0)
         {
-          if (auraActivated.FavorModifier > 0)
-          {
-            RewardFavor(agent, auraActivated.FavorModifier);
-          }
-          else
-          {
-            _agentManager.ModifyFavor(agent, auraActivated.FavorModifier);
-          }
+          AgentManager.ModifyFavor(agent, auraActivated.FavorModifier);
         }
         if (auraActivated.HitPointsModifier != 0)
         {
-          _agentManager.ModifyHitPoints(agent, auraActivated.HitPointsModifier);
+          AgentManager.ModifyHitPoints(agent, auraActivated.HitPointsModifier);
         }
         if (auraActivated.ActionPointsModifier != 0)
         {
-          _agentManager.ModifyActionPoints(agent, auraActivated.ActionPointsModifier);
+          AgentManager.ModifyActionPoints(agent, auraActivated.ActionPointsModifier);
         }
         if (auraActivated.BonusActionPointsModifier != 0)
         {
-          _agentManager.ModifyBonusActionPoints(agent, auraActivated.BonusActionPointsModifier);
+          AgentManager.ModifyBonusActionPoints(agent, auraActivated.BonusActionPointsModifier);
         }
       });
       _state.ActiveAuras.Add(activeAura);
@@ -244,7 +236,6 @@ namespace Shim
         DeactivateAura(activeAura);
       }
     }
-
     private void CheckActiveAurasExpiration()
     {
       for (int i = _state.ActiveAuras.Count - 1; i >= 0; i--)
@@ -261,12 +252,11 @@ namespace Shim
         }
       }
     }
-
     private void DeactivateAura(ActiveAura activeAura)
     {
       activeAura.Targets.ForEach((Agent agent) =>
       {
-        _agentManager.UnassignTrait(activeAura.Aura.Trait, agent);
+        AgentManager.UnassignTrait(activeAura.Aura.Trait, agent);
       });
       if (activeAura.Aura.Type == AuraType.GameEvent)
       {
@@ -278,7 +268,6 @@ namespace Shim
       }
       _state.ActiveAuras.Remove(activeAura);
     }
-
     private void DrawItem(Agent agent)
     {
       Item item = _items.Draw();
@@ -290,10 +279,10 @@ namespace Shim
           Source = agent,
           NewItem = item
         };
-        _eventManager.OnTooManyPermanentItems(this, decision);
+        EventManager.OnTooManyPermanentItems(this, decision);
         if (decision.ItemToDiscard != null)
         {
-          _agentManager.UnassignItem(decision.ItemToDiscard, agent);
+          AgentManager.UnassignItem(decision.ItemToDiscard, agent);
           _items.Discard(decision.ItemToDiscard);
         }
         else
@@ -303,27 +292,24 @@ namespace Shim
       }
       if (keepItem)
       {
-        _agentManager.AssignItem(item, agent);
+        AgentManager.AssignItem(item, agent);
       }
       else
       {
         _items.Discard(item);
       }
     }
-
     private void DrawEvent()
     {
       Aura gameEvent = _gameEvents.Draw();
       Logger.Log($"New game event: {gameEvent.Trait.Name}");
       ActivateAura(gameEvent);
     }
-
     private void DrawTrap(Agent agent)
     {
       Aura trap = _traps.Draw();
       ActivateAura(trap, agent);
     }
-
     private void DrawBlessing(Agent agent)
     {
       Aura blessing = _blessings.Draw();
@@ -334,7 +320,6 @@ namespace Shim
       }
       ActivateAura(blessing, agent);
     }
-
     private void DrawCreature(Agent agent)
     {
       Creature creature = _creatures.Draw();
@@ -347,22 +332,21 @@ namespace Shim
           Target = creature,
           FavorReward = creature.FavorReward
         };
-        _eventManager.OnTargetDefeated(this, targetDefeat);
-        RewardFavor(agent, targetDefeat.FavorReward);
+        EventManager.OnTargetDefeated(this, targetDefeat);        
+        AgentManager.ModifyFavor(agent, targetDefeat.FavorReward);
         targetDefeat.Helpers.ForEach((Agent helper) =>
         {
-          AgentHelpedEvent agentHelp = new AgentHelpedEvent()
+          AgentHelpedEvent agentHelped = new AgentHelpedEvent()
           {
             Target = creature,
             Helper = helper
           };
-          _eventManager.OnAgentHelped(this, agentHelp);
-          RewardFavor(agentHelp.Helper, agentHelp.FavorReward);
+          EventManager.OnAgentHelped(this, agentHelped);
+          AgentManager.ModifyFavor(agentHelped.Helper, agentHelped.FavorReward);
         });
       }
       _creatures.Discard(creature);
     }
-
     private bool PerformAttack(Target attacker, Target defender)
     {
       AttackEvent attack = new AttackEvent()
@@ -373,7 +357,7 @@ namespace Shim
         Defense = defender.GetDefenseAgainst(attacker)
       };
       Logger.Log($"{attacker.Name} is attacking {defender.Name} ({attack.Strength} STR / {attack.Defense} DEF)");
-      _eventManager.OnAttack(this, attack);
+      EventManager.OnAttack(this, attack);
       if (attack.Strength < 1)
       {
         Logger.Log($"{attacker.Name} could not attack");
@@ -386,7 +370,7 @@ namespace Shim
         if (defender is Agent)
         {
           int damageTaken = (attack.Strength - attack.Defense);
-          _agentManager.ModifyHitPoints((Agent) defender, damageTaken * -1);
+          AgentManager.ModifyHitPoints((Agent) defender, damageTaken * -1);
         }
         return true;
       }
@@ -396,10 +380,9 @@ namespace Shim
       }
       return false;
     }
-
     private void AttackAgent(Agent attacker, Agent defender)
     {
-      _agentManager.ModifyActionPoints(attacker, -1);
+      AgentManager.ModifyActionPoints(attacker, -1);
       PerformAttack(attacker, defender);
       if (!defender.IsDead)
       {
@@ -413,11 +396,10 @@ namespace Shim
           Source = attacker
         };
         Logger.Log($"Agent {targetDefeated.Source.Name} defeated agent {targetDefeated.Target.Name}");
-        _eventManager.OnTargetDefeated(this, targetDefeated);
-        RewardFavor(targetDefeated.Source, targetDefeated.FavorReward);
+        EventManager.OnTargetDefeated(this, targetDefeated);
+        AgentManager.ModifyFavor(targetDefeated.Source, targetDefeated.FavorReward);
       }
     }
-
     private void Move(Agent agent, Tile tile)
     {
       MoveEvent move = new MoveEvent()
@@ -426,9 +408,9 @@ namespace Shim
         ActionPointCost = _parameters.BaseMovementCost,
         Tile = tile
       };
-      _eventManager.OnMove(this, move);
-      _agentManager.ModifyActionPoints(agent, move.ActionPointCost * -1);
-      _agentManager.SetPosition(move.Agent, move.Tile);
+      EventManager.OnMove(this, move);
+      AgentManager.ModifyActionPoints(agent, move.ActionPointCost * -1);
+      AgentManager.SetPosition(move.Agent, move.Tile);
       switch (move.Tile.Type)
       {
         case TileType.Blessing:
@@ -438,7 +420,7 @@ namespace Shim
           DrawCreature(move.Agent);
           break;
         case TileType.Discovery:
-          RewardFavor(move.Agent, tile.IntValue);
+          AgentManager.ModifyFavor(move.Agent, tile.IntValue);
           break;
         case TileType.Gate:
           EnterGate(move.Agent, tile.StringValue);
@@ -454,29 +436,16 @@ namespace Shim
           break;
       }
     }
-
     private void EnterGate(Agent agent, string exitId)
     {
-      Tile gateExit = _boardManager.GetTile(exitId);
+      Tile gateExit = BoardManager.GetTile(exitId);
       if (gateExit == null)
       {
         Logger.Log($"Error: Gate exit {exitId} doesn't exists!");
         return;
       }
-      _agentManager.SetPosition(agent, gateExit);
+      AgentManager.SetPosition(agent, gateExit);
     }
-
-    private void RewardFavor(Agent agent, int amount)
-    {
-      FavorGainedEvent favorGain = new FavorGainedEvent()
-      {
-        Agent = agent,
-        Amount = amount
-      };
-      _eventManager.OnFavorGained(this, favorGain);
-      _agentManager.ModifyFavor(favorGain.Agent, favorGain.Amount);
-    }
-
     private void VisitHealer(Agent agent)
     {
       if (agent.IsDead)
@@ -486,24 +455,22 @@ namespace Shim
           Agent = agent,
           HitPoints = _parameters.HitPointsAfterResurrection
         };
-        _eventManager.OnAgentResurrected(this, agentResurrection);
-        _agentManager.ModifyHitPoints(agentResurrection.Agent, agentResurrection.HitPoints);
+        EventManager.OnAgentResurrected(this, agentResurrection);
+        AgentManager.ModifyHitPoints(agentResurrection.Agent, agentResurrection.HitPoints);
       }
       else
       {
-        _agentManager.ModifyHitPoints(agent, _parameters.HitPointsRestoredByHealer);
+        AgentManager.ModifyHitPoints(agent, _parameters.HitPointsRestoredByHealer);
       }
     }
-
     private void UseItem(Item item, Agent source, Agent target)
     {
       Logger.Log("UseItem(): not yet implemented");
     }
-
     private void ExecuteTurn()
     {
       Logger.Log($"Turn: {_state.Turn} ({_state.Agents[_state.Turn-1].Name}) of round {_state.Round}");
-      _agentManager.ResetActionPoints(_state.TurnAgent);
+      AgentManager.ResetActionPoints(_state.TurnAgent);
       bool endOfTurn = false;
       int maxActions = _parameters.MaxActionsPerTurn;
       int actionsDone = 0;
@@ -516,7 +483,7 @@ namespace Shim
           Type = TurnActionType.Undecided,
           Source = _state.TurnAgent
         };
-        _eventManager.OnTurnAction(this, nextAction);
+        EventManager.OnTurnAction(this, nextAction);
         switch (nextAction.Type)
         {
           case TurnActionType.AttackAgent:

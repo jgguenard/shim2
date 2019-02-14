@@ -1,6 +1,7 @@
 ﻿using Shim.Entities;
 using Shim.Events;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Shim.Traits
 {
@@ -22,8 +23,12 @@ namespace Shim.Traits
     public const int SCORE_TRAP = 15;
     public const int SCORE_CREATURE_LOW_HIT_POINTS = 10;
 
-    private BoardManager _board;
     private readonly Dictionary<Agent, List<Tile>> _trips = new Dictionary<Agent, List<Tile>>();
+
+    public BasicAgentTrait() : base()
+    {
+      EventManager.TurnAction += OnTurnAction;
+    }
 
     private bool ResumeTrip(TurnActionEvent e)
     {
@@ -42,12 +47,6 @@ namespace Shim.Traits
       _trips[agent] = path;
     }
 
-    public void Initialize(EventManager events, BoardManager board)
-    {
-      events.TurnAction += OnTurnAction;
-      _board = board;
-    }
-
     public void OnTurnAction(object sender, TurnActionEvent e)
     {
       /*
@@ -55,7 +54,7 @@ namespace Shim.Traits
        x resume current trip
        x move towards a healer if dead
        - use recovery item if low HP
-       - attack a reachable weaker player if we can survive the ripost
+       - attack a reachable weaker player if we think we can survive the ripost
        x move to the most valuable point of interest (see CONSTANTS for priority)
        x stop
       */
@@ -71,13 +70,38 @@ namespace Shim.Traits
         // move towards a healer if dead
         if (e.Source.IsDead)
         {
-          CreateTrip(e.Source, _board.ShortestPathToTileType(e.Source.Position, TileType.Healer));
+          CreateTrip(e.Source, BoardManager.ShortestPathToTileType(e.Source.Position, TileType.Healer));
           ResumeTrip(e);
           return;
         }
 
+        // attack a reachable weaker player if we think we can survive the ripost
+        var agentAttackRange = e.Parameters.AgentAttackBaseRange; // todo: take modifiers from items and traits into account
+        var possibleTargets = e.GameState.Agents
+          .Where(agent => agent != e.Source)
+          .Select(agent => {
+            return new
+            {
+              Target = agent,
+              Path = BoardManager.GetPath(e.Source.Position, agent.Position)
+            };
+          })
+          .Where(
+            entry => entry.Path.Count <= agentAttackRange && // is in range
+            e.Source.GetStrengthAgainst(entry.Target) > entry.Target.GetDefenseAgainst(e.Source) && // is weaker then agent
+            (entry.Target.GetStrengthAgainst(e.Source) - e.Source.GetDefenseAgainst(entry.Target) < e.Source.AvailableHitPoints) // will not kill agent while riposting
+          )
+          .OrderBy(entry => entry.Path.Count)
+          .ToList();
+        if (possibleTargets.Count > 0)
+        {
+          e.Type = TurnActionType.AttackAgent;
+          e.Target = possibleTargets[0].Target;
+          return;
+        }
+
         // move to the most valuable point of interest
-        var possibleTrips = _board.ReachablePointsOfInterest(e.Source.Position, e.Source.AvailableActionPoints, e.Source.PreviousPosition);
+        var possibleTrips = BoardManager.ReachablePointsOfInterest(e.Source.Position, e.Source.AvailableActionPoints, e.Source.PreviousPosition);
         List<Tile> mostValuableTrip = null;
         int bestScore = 0;
         foreach (var trip in possibleTrips)

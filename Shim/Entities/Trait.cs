@@ -1,5 +1,4 @@
-﻿using Shim.Events;
-using Shim.Library;
+﻿using Shim.Library;
 using System.Runtime.CompilerServices;
 
 namespace Shim.Entities
@@ -20,12 +19,9 @@ namespace Shim.Entities
       ActionPointCost = 0;
     }
 
-    public virtual void Initialize(EventManager eventManager) { }
-
     protected void Log(object caller, string message, [CallerMemberName]string methodName = "")
     {
       Logger.Log($"{message} ({caller.GetType()}:{methodName}())");
     }
-
   }
 }

@@ -5,9 +5,9 @@ namespace Shim.Traits
 {
   public class DummyBlessing : Trait
   {
-    public override void Initialize(EventManager events)
+    public DummyBlessing() : base()
     {
-      events.AuraActivated += OnAuraActivated;
+      EventManager.AuraActivated += OnAuraActivated;
     }
 
     public void OnAuraActivated(object sender, AuraActivatedEvent e)

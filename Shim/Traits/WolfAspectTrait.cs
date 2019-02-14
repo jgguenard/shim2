@@ -8,20 +8,20 @@ namespace Shim.Traits
     public const int BASE_STRENGTH_MODIFIER = 1;
     public const int BONUS_ACTION_POINTS_MODIFIER = 1;
     public const int STRENGTH_MODIFIER_WHEN_HELPING = 1;
-    public override void Initialize(EventManager events)
+
+    public WolfAspectTrait() : base()
     {
-      events.AgentInit += OnAgentInit;
-      events.Attack += OnAttack;
+      EventManager.AgentInit += OnAgentInit;
+      EventManager.Attack += OnAttack;
     }
 
     public void OnAgentInit(object sender, AgentInitEvent e)
     {
-      if (e.NewAgent.HasTrait(this))
+      if (e.Agent.HasTrait(this))
       {
-        e.NewAgent.BaseStrength += BASE_STRENGTH_MODIFIER;
-        Log(this, $"{e.NewAgent.Name}'s base strength is now {e.NewAgent.BaseStrength}");
-        e.NewAgent.MaxBonusActionPoints += BONUS_ACTION_POINTS_MODIFIER;
-        Log(this, $"{e.NewAgent.Name}'s has now {e.NewAgent.MaxBonusActionPoints} bonus action points");
+        e.BaseStrength += BASE_STRENGTH_MODIFIER;
+        e.MaxBonusActionPoints += BONUS_ACTION_POINTS_MODIFIER;
+        Log(this, $"{e.Agent.Name} gained {e.Agent.BaseStrength} base STR and {e.MaxBonusActionPoints} bonus AP");
       }
     }
 

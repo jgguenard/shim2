@@ -7,18 +7,19 @@ namespace Shim.Traits
   {
     public const int BASE_DEFENSE_MODIFIER = 2;
     public const int FIGHTING_ALONE_STRENGTH_MODIFIER = 2;
-    public override void Initialize(EventManager events)
+
+    public BearAspectTrait() : base()
     {
-      events.AgentInit += OnAgentInit;
-      events.Attack += OnAttack;
+      EventManager.AgentInit += OnAgentInit;
+      EventManager.Attack += OnAttack;
     }
 
     public void OnAgentInit(object sender, AgentInitEvent e)
     {
-      if (e.NewAgent.HasTrait(this))
+      if (e.Agent.HasTrait(this))
       {
-        e.NewAgent.BaseDefense += BASE_DEFENSE_MODIFIER;
-        Log(this, $"{e.NewAgent.Name}'s base defense is now {e.NewAgent.BaseDefense}");
+        e.BaseDefense += BASE_DEFENSE_MODIFIER;
+        Log(this, $"{e.Agent.Name}'s base defense was increased by {e.Agent.BaseDefense}");
       }
     }
 

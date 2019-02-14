@@ -2,67 +2,68 @@
 
 namespace Shim.Entities
 {
-  public class EventManager
+  public static class EventManager
   {
-    public event TooManyPermanentItemsEventHandler TooManyPermanentItems;
-    public event AgentInitEventHandler AgentInit;
-    public event TurnActionEventHandler TurnAction;
-    public event TargetDefeatedEventHandler TargetDefeated;
-    public event AttackEventHandler Attack;
-    public event MoveEventHandler Move;
-    public event FavorGainedEventHandler FavorGained;
-    public event AgentResurrectedEventHandler AgentResurrected;
-    public event AgentHelpedEventHandler AgentHelped;
-    public event AuraActivatedEventHandler AuraActivated;
+    public static event TooManyPermanentItemsEventHandler TooManyPermanentItems;
+    public static event AgentInitEventHandler AgentInit;
+    public static event TurnActionEventHandler TurnAction;
+    public static event TargetDefeatedEventHandler TargetDefeated;
+    public static event AttackEventHandler Attack;
+    public static event MoveEventHandler Move;
+    public static event FavorGainedEventHandler FavorGained;
+    public static event AgentResurrectedEventHandler AgentResurrected;
+    public static event AgentHelpedEventHandler AgentHelped;
+    public static event AuraActivatedEventHandler AuraActivated;
+    public static event EvaluateStatEventHandler EvaluateStat;
 
-    public void OnTooManyPermanentItems(object sender, TooManyPermanentItemsEvent args)
+    public static void OnTooManyPermanentItems(object sender, TooManyPermanentItemsEvent args)
     {
-      TooManyPermanentItems?.Invoke(this, args);
+      TooManyPermanentItems?.Invoke(sender, args);
     }
 
-    public void OnAgentInit(object sender, AgentInitEvent args)
+    public static void OnAgentInit(object sender, AgentInitEvent args)
     {
-      AgentInit?.Invoke(this, args);
+      AgentInit?.Invoke(sender, args);
     }
 
-    public void OnTurnAction(object sender, TurnActionEvent args)
+    public static void OnTurnAction(object sender, TurnActionEvent args)
     {
-      TurnAction?.Invoke(this, args);
+      TurnAction?.Invoke(sender, args);
     }
 
-    public void OnTargetDefeated(object sender, TargetDefeatedEvent args)
+    public static void OnTargetDefeated(object sender, TargetDefeatedEvent args)
     {
-      TargetDefeated?.Invoke(this, args);
+      TargetDefeated?.Invoke(sender, args);
     }
 
-    public void OnAttack(object sender, AttackEvent args)
+    public static void OnAttack(object sender, AttackEvent args)
     {
-      Attack?.Invoke(this, args);
+      Attack?.Invoke(sender, args);
     }
 
-    public void OnMove(object sender, MoveEvent args)
+    public static void OnMove(object sender, MoveEvent args)
     {
-      Move?.Invoke(this, args);
+      Move?.Invoke(sender, args);
     }
 
-    public void OnFavorGained(object sender, FavorGainedEvent args)
+    public static void OnFavorGained(object sender, FavorGainedEvent args)
     {
-      FavorGained?.Invoke(this, args);
+      FavorGained?.Invoke(sender, args);
     }
 
-    public void OnAgentResurrected(object sender, AgentResurrectedEvent args)
+    public static void OnAgentResurrected(object sender, AgentResurrectedEvent args)
     {
-      AgentResurrected?.Invoke(this, args);
+      AgentResurrected?.Invoke(sender, args);
     }
 
-    public void OnAgentHelped(object sender, AgentHelpedEvent args)
+    public static void OnAgentHelped(object sender, AgentHelpedEvent args)
     {
-      AgentHelped?.Invoke(this, args);
+      AgentHelped?.Invoke(sender, args);
     }
 
-    public void OnAuraActivated(object sender, AuraActivatedEvent args)
+    public static void OnAuraActivated(object sender, AuraActivatedEvent args)
     {
-      AuraActivated?.Invoke(this, args);
+      AuraActivated?.Invoke(sender, args);
     }
   }
 }

@@ -45,7 +45,7 @@ namespace Shim.Entities
 
     public override int GetStrengthAgainst(Target target)
     {
-      int value = BaseStrength;
+      int value = base.GetStrengthAgainst(target);
       Items.ForEach((Item item) =>
       {
         value += item.BaseStrength;
@@ -55,7 +55,7 @@ namespace Shim.Entities
 
     public override int GetDefenseAgainst(Target target)
     {
-      int value = BaseDefense;
+      int value = base.GetDefenseAgainst(target);
       Items.ForEach((Item item) =>
       {
         value += item.BaseDefense;
