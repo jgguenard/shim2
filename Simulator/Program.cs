@@ -71,7 +71,8 @@ namespace Simulator
       simulation.AddItem(new Item("Spear")
       {
         BaseDefense = 0,
-        BaseStrength = 2
+        BaseStrength = 2,
+        Trait = TraitManager.DummyItemTrait
       });
       simulation.AddItem(new Item("Shield")
       {

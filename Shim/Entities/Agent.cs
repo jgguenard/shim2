@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Shim.Events;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Shim.Entities
@@ -50,7 +51,15 @@ namespace Shim.Entities
       {
         value += item.BaseStrength;
       });
-      return value;
+      EvaluateStatEvent evaluation = new EvaluateStatEvent()
+      {
+        Source = this,
+        Target = target,
+        Value = value,
+        Stat = StatType.Strength
+      };
+      EventManager.OnEvaluateStat(this, evaluation);
+      return evaluation.Value;
     }
 
     public override int GetDefenseAgainst(Target target)
@@ -60,6 +69,14 @@ namespace Shim.Entities
       {
         value += item.BaseDefense;
       });
+      EvaluateStatEvent evaluation = new EvaluateStatEvent()
+      {
+        Source = this,
+        Target = target,
+        Value = value,
+        Stat = StatType.Defense
+      };
+      EventManager.OnEvaluateStat(this, evaluation);
       return value;
     }
   }

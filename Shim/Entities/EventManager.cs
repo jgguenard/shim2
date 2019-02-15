@@ -65,5 +65,10 @@ namespace Shim.Entities
     {
       AuraActivated?.Invoke(sender, args);
     }
+
+    public static void OnEvaluateStat(object sender, EvaluateStatEvent args)
+    {
+      EvaluateStat?.Invoke(sender, args);
+    }
   }
 }
