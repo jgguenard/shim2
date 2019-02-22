@@ -39,7 +39,7 @@ namespace Shim.Entities
     {
       agent.AvailableActionPoints = agent.MaxActionPoints;
       agent.AvailableBonusActionPoints = agent.MaxBonusActionPoints;
-      Logger.Log($"Actions points of {agent.Name} are reset (value: {agent.AvailableActionPoints}/{agent.AvailableBonusActionPoints})");
+      Logger.Log($"Actions points of {agent.Name} are reset (value: {agent.AvailableActionPoints} AP / {agent.AvailableBonusActionPoints}) bonus AP");
     }
 
     public static void ResetHitPoints(Agent agent)
@@ -106,7 +106,7 @@ namespace Shim.Entities
         }
         else
         {
-          Logger.Log($"Agent {agent.Name} lost {amountGained} HP (value: {agent.AvailableHitPoints})");
+          Logger.Log($"Agent {agent.Name} lost {amountGained * -1} HP (value: {agent.AvailableHitPoints})");
         }
       }
       return amountGained;
@@ -131,7 +131,7 @@ namespace Shim.Entities
         else
         {
           agent.Favor += amountGained;
-          Logger.Log($"Agent {agent.Name} lost {amountGained} favor (value: {agent.Favor})");
+          Logger.Log($"Agent {agent.Name} lost {amountGained * -1} favor (value: {agent.Favor})");
         }
       }
       return amountGained;
