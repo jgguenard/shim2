@@ -17,7 +17,7 @@ namespace Shim.Traits
       if (e.Agent.HasTrait(this))
       {
         e.MaxActionPoints += ACTION_POINTS_MODIFIER;
-        Log(this, $"{e.Agent.Name}'s has now {e.Agent.MaxActionPoints} max action points");
+        Log(this, $"{e.Agent.Name}'s gains +{ACTION_POINTS_MODIFIER} max action points");
       }
     }
   }

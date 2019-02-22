@@ -12,6 +12,7 @@ namespace Shim.Traits
     {
       EventManager.AgentInit += OnAgentInit;
       EventManager.Attack += OnAttack;
+      EventManager.EvaluateStat += OnEvaluateStat;
     }
 
     public void OnAgentInit(object sender, AgentInitEvent e)
@@ -19,7 +20,7 @@ namespace Shim.Traits
       if (e.Agent.HasTrait(this))
       {
         e.BaseDefense += BASE_DEFENSE_MODIFIER;
-        Log(this, $"{e.Agent.Name}'s base defense was increased by {e.Agent.BaseDefense}");
+        Log(this, $"{e.Agent.Name}'s base defense was increased by {BASE_DEFENSE_MODIFIER}");
       }
     }
 
@@ -29,6 +30,14 @@ namespace Shim.Traits
       {
         e.Strength += FIGHTING_ALONE_STRENGTH_MODIFIER;
         Log(this, $"{e.Attacker.Name}'s gained +{FIGHTING_ALONE_STRENGTH_MODIFIER} to strength for fighting alone");
+      }
+    }
+
+    public void OnEvaluateStat(object sender, EvaluateStatEvent e)
+    {
+      if (e.Source.HasTrait(this) && e.Target is Agent && e.Stat == StatType.Strength)
+      {
+        e.Value += FIGHTING_ALONE_STRENGTH_MODIFIER;
       }
     }
   }

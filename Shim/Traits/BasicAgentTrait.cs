@@ -53,8 +53,8 @@ namespace Shim.Traits
        Own Turn APL
        x resume current trip
        x move towards a healer if dead
-       - use recovery item if low HP
-       - attack a reachable weaker player if we think we can survive the ripost
+       - use item
+       x attack a reachable weaker player if we think we can survive the ripost
        x move to the most valuable point of interest (see CONSTANTS for priority)
        x stop
       */
@@ -88,6 +88,7 @@ namespace Shim.Traits
           })
           .Where(
             entry => entry.Path.Count <= agentAttackRange && // is in range
+            !e.Source.DefeatedAgents.Contains(entry.Target) && // not already defeated
             e.Source.GetStrengthAgainst(entry.Target) > entry.Target.GetDefenseAgainst(e.Source) && // is weaker then agent
             (entry.Target.GetStrengthAgainst(e.Source) - e.Source.GetDefenseAgainst(entry.Target) < e.Source.AvailableHitPoints) // will not kill agent while riposting
           )
@@ -101,7 +102,7 @@ namespace Shim.Traits
         }
 
         // move to the most valuable point of interest
-        var possibleTrips = BoardManager.ReachablePointsOfInterest(e.Source.Position, e.Source.AvailableActionPoints, e.Source.PreviousPosition);
+        var possibleTrips = BoardManager.ReachablePointsOfInterest(e.Source.Position, e.Source.MaxActionPoints, e.Source.PreviousPosition);
         List<Tile> mostValuableTrip = null;
         int bestScore = 0;
         foreach (var trip in possibleTrips)

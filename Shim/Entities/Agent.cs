@@ -16,6 +16,7 @@ namespace Shim.Entities
     public List<Item> Items { get; set; }
     public Tile Position { get; set; }
     public Tile PreviousPosition { get; set; }
+    public List<Agent> DefeatedAgents { get; set; }
     public int PermanentItemCount
     {
       get
@@ -42,6 +43,7 @@ namespace Shim.Entities
       AvailableBonusActionPoints = 0;
       Favor = 0;
       Items = new List<Item>();
+      DefeatedAgents = new List<Agent>();
     }
 
     public override int GetStrengthAgainst(Target target)

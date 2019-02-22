@@ -68,32 +68,40 @@ namespace Simulator
       simulation.AddBlessing(TraitManager.DummyBlessing, ExpirationType.Now);
       simulation.AddBlessing(TraitManager.DummyBlessing, ExpirationType.Now);
       simulation.AddBlessing(TraitManager.DummyBlessing, ExpirationType.Now);
-      simulation.AddItem(new Item("Spear")
+      simulation.AddTrap(TraitManager.DummyTrap, ExpirationType.Now);
+      simulation.AddTrap(TraitManager.DummyTrap, ExpirationType.Now);
+      simulation.AddTrap(TraitManager.DummyTrap, ExpirationType.Now);
+      simulation.AddTrap(TraitManager.DummyTrap, ExpirationType.Now);
+      simulation.AddTrap(TraitManager.DummyTrap, ExpirationType.Now);
+      for( var i = 0; i < 6; i++)
       {
-        BaseDefense = 0,
-        BaseStrength = 2,
-        Trait = TraitManager.DummyItemTrait
-      });
-      simulation.AddItem(new Item("Shield")
-      {
-        BaseDefense = 2,
-        BaseStrength = 0
-      });
-      simulation.AddItem(new Item("Helm")
-      {
-        BaseDefense = 1,
-        BaseStrength = 1
-      });
-      simulation.AddItem(new Item("Cape")
-      {
-        BaseDefense = 1,
-        BaseStrength = 0
-      });
-      simulation.AddItem(new Item("Hammer")
-      {
-        BaseDefense = 0,
-        BaseStrength = 1
-      });
+        simulation.AddItem(new Item("Spear")
+        {
+          BaseDefense = 0,
+          BaseStrength = 2,
+          Trait = TraitManager.DummyItemTrait
+        });
+        simulation.AddItem(new Item("Shield")
+        {
+          BaseDefense = 2,
+          BaseStrength = 0
+        });
+        simulation.AddItem(new Item("Helm")
+        {
+          BaseDefense = 1,
+          BaseStrength = 1
+        });
+        simulation.AddItem(new Item("Cape")
+        {
+          BaseDefense = 1,
+          BaseStrength = 0
+        });
+        simulation.AddItem(new Item("Hammer")
+        {
+          BaseDefense = 0,
+          BaseStrength = 1
+        });
+      }
       simulation.Run();
       System.IO.File.WriteAllLines(@".\Output.yaml", simulation.GetLog());
 

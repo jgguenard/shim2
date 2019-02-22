@@ -10,6 +10,7 @@ namespace Shim.Entities
     public static PantherAspectTrait PantherAspectTrait = new PantherAspectTrait();
     public static DummyTrait DummyTrait = new DummyTrait();
     public static DummyBlessing DummyBlessing = new DummyBlessing();
+    public static DummyTrap DummyTrap = new DummyTrap();
     public static DummyItemTrait DummyItemTrait = new DummyItemTrait();
   }
 }

@@ -21,7 +21,7 @@ namespace Shim.Traits
       {
         e.BaseStrength += BASE_STRENGTH_MODIFIER;
         e.MaxBonusActionPoints += BONUS_ACTION_POINTS_MODIFIER;
-        Log(this, $"{e.Agent.Name} gained {e.Agent.BaseStrength} base STR and {e.MaxBonusActionPoints} bonus AP");
+        Log(this, $"{e.Agent.Name} gained +{BASE_STRENGTH_MODIFIER} to base STR and +{BONUS_ACTION_POINTS_MODIFIER} bonus AP");
       }
     }
 

@@ -37,9 +37,7 @@ namespace Shim
     public void AddAgent(string name, Trait[] initialTraits = null)
     {
       Agent agent = new Agent(name) {
-        MaxHitPoints = _parameters.MaxHitPoints,
-        MaxActionPoints = _parameters.DefaultMaxActionPoints,
-        MaxBonusActionPoints = _parameters.DefaultMaxBonusActionPoints
+        MaxHitPoints = _parameters.MaxHitPoints
       };
       if (initialTraits != null)
       {
@@ -78,9 +76,15 @@ namespace Shim
         Expiration = expiration
       });
     }
-    public void AddTrap(Aura aura)
+    public void AddTrap(Trait trait, ExpirationType expiration)
     {
-      _traps.Add(aura);
+      _traps.Add(new Aura()
+      {
+        Trait = trait,
+        Type = AuraType.Other,
+        Scope = ScopeType.Self,
+        Expiration = expiration
+      });
     }
     public List<string> GetLog()
     {
@@ -99,6 +103,7 @@ namespace Shim
         {
           throw new Exception($"Expecting between {_parameters.MinAgents} and {_parameters.MaxAgents} agents but got {_state.Agents.Count}");
         }
+        Logger.Log("Initialization", true);
 
         // Shuffle decks
         Logger.Log($"Shuffling decks");
@@ -383,12 +388,12 @@ namespace Shim
     private void AttackAgent(Agent attacker, Agent defender)
     {
       AgentManager.ModifyActionPoints(attacker, -1);
-      PerformAttack(attacker, defender);
+      var victory = PerformAttack(attacker, defender);
       if (!defender.IsDead)
       {
         PerformAttack(defender, attacker);
       }
-      if (!attacker.IsDead)
+      if (victory && !attacker.IsDead)
       {
         var targetDefeated = new TargetDefeatedEvent()
         {
@@ -398,6 +403,7 @@ namespace Shim
         Logger.Log($"Agent {targetDefeated.Source.Name} defeated agent {targetDefeated.Target.Name}");
         EventManager.OnTargetDefeated(this, targetDefeated);
         AgentManager.ModifyFavor(targetDefeated.Source, targetDefeated.FavorReward);
+        AgentManager.RegisterDuelVictory(targetDefeated.Source, (Agent)targetDefeated.Target);
       }
     }
     private void Move(Agent agent, Tile tile)
@@ -469,7 +475,7 @@ namespace Shim
     }
     private void ExecuteTurn()
     {
-      Logger.Log($"Turn: {_state.Turn} ({_state.Agents[_state.Turn-1].Name}) of round {_state.Round}");
+      Logger.Log($"Turn {_state.Turn} ({_state.Agents[_state.Turn-1].Name}) of round {_state.Round}", true);
       AgentManager.ResetActionPoints(_state.TurnAgent);
       bool endOfTurn = false;
       int maxActions = _parameters.MaxActionsPerTurn;

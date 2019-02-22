@@ -12,8 +12,12 @@ namespace Shim.Library
       Lines = new List<string>();
     }
 
-    public static void Log(string message)
+    public static void Log(string message, bool separator = false)
     {
+      if (separator)
+      {
+        message = $"====== {message} ======";
+      }
       Lines.Add(message);
       Console.WriteLine(message);
     }

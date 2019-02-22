@@ -55,7 +55,7 @@ namespace Shim.Entities
         agent.PreviousPosition = agent.Position;
       }
       agent.Position = tile;
-      Logger.Log($"Agent {agent.Name} moves to {tile.Name}");
+      Logger.Log($"Agent {agent.Name} moves to {tile.Name} ({tile.Type.ToString()})");
     }
 
     public static int ModifyActionPoints(Agent agent, int amount)
@@ -155,6 +155,12 @@ namespace Shim.Entities
     public static void ModifyMaxActionPoints(Agent agent, int amount)
     {
       agent.MaxActionPoints += amount;
+    }
+
+    public static void RegisterDuelVictory(Agent attacker, Agent defender)
+    {
+      attacker.DefeatedAgents.Add(defender);
+      Logger.Log($"Duel between {attacker.Name} and {defender.Name} was registered");
     }
 
     private static int ValidateStat(int value, int increment, int maxValue)
