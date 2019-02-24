@@ -13,5 +13,6 @@ namespace Shim.Entities
     public static DummyTrap DummyTrap = new DummyTrap();
     public static DummyItemTrait DummyItemTrait = new DummyItemTrait();
     public static DuelQuest DuelQuest = new DuelQuest();
+    public static HelpQuest HelpQuest = new HelpQuest();
   }
 }

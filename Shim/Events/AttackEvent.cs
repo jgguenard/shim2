@@ -6,6 +6,7 @@ namespace Shim.Events
 {
   public class AttackEvent : EventArgs
   {
+    public GameState GameState { get; set; }
     public List<Agent> Helpers;
     public Target Attacker;
     public Target Defender;

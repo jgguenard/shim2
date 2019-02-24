@@ -36,16 +36,19 @@ namespace Simulator
       simulation.AddAgent("Bear", new Trait[] {
         TraitManager.BasicAgentTrait,
         TraitManager.DuelQuest,
+        TraitManager.HelpQuest,
         TraitManager.BearAspectTrait
       });
       simulation.AddAgent("Wolf", new Trait[] {
         TraitManager.BasicAgentTrait,
         TraitManager.DuelQuest,
+        TraitManager.HelpQuest,
         TraitManager.WolfAspectTrait
       });
       simulation.AddAgent("Panther", new Trait[] {
         TraitManager.BasicAgentTrait,
         TraitManager.DuelQuest,
+        TraitManager.HelpQuest,
         TraitManager.PantherAspectTrait
       });
       simulation.AddCreature(new Creature("DummyCreature1")

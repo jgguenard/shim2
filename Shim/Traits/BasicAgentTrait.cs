@@ -28,6 +28,7 @@ namespace Shim.Traits
     public BasicAgentTrait() : base()
     {
       EventManager.TurnAction += OnTurnAction;
+      EventManager.Attack += OnAttack;
     }
 
     private bool ResumeTrip(TurnActionEvent e)
@@ -45,6 +46,27 @@ namespace Shim.Traits
     public void CreateTrip(Agent agent, List<Tile> path)
     {
       _trips[agent] = path;
+    }
+
+    public void OnAttack(object sender, AttackEvent e)
+    {
+      // Determining helpers
+      if (e.Attacker is Agent && e.Defender is Creature && e.Strength <= e.Defense)
+      {
+        var availableHelpers = e.GameState.Agents.Where(a => a != e.Attacker && a.AvailableBonusActionPoints > 0).ToList();
+        foreach (Agent agent in availableHelpers)
+        {
+          int missingStrength = e.Defense - e.Strength;
+          int availableStrength = agent.GetStrengthAgainst(e.Defender);
+          if (missingStrength > 0 && availableStrength > 0)
+          {
+            int strengthModifier = (availableStrength > missingStrength) ? missingStrength : availableStrength;
+            e.Helpers.Add(agent);
+            e.Strength += strengthModifier;
+            Log(this, $"Agent {agent.Name} decided to help {e.Attacker.Name} fight {e.Defender.Name} with {strengthModifier} strength");
+          }
+        }
+      }
     }
 
     public void OnTurnAction(object sender, TurnActionEvent e)

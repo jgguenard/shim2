@@ -6,7 +6,7 @@ namespace Shim.Traits
   public class BearAspectTrait : Trait
   {
     public const int BASE_DEFENSE_MODIFIER = 2;
-    public const int FIGHTING_ALONE_STRENGTH_MODIFIER = 2;
+    public const int FIGHTING_ALONE_STRENGTH_MODIFIER = 1;
 
     public BearAspectTrait() : base()
     {

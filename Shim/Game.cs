@@ -328,13 +328,14 @@ namespace Shim
     private void DrawCreature(Agent agent)
     {
       Creature creature = _creatures.Draw();
-      PerformAttack(creature, agent);
-      if (!agent.IsDead && PerformAttack(agent, creature))
+      PerformAttack(creature, agent, out AttackEvent attack);
+      if (!agent.IsDead && PerformAttack(agent, creature, out AttackEvent ripost))
       {
         var targetDefeat = new TargetDefeatedEvent()
         {
           Source = agent,
           Target = creature,
+          Helpers = ripost.Helpers,
           FavorReward = creature.FavorReward
         };
         EventManager.OnTargetDefeated(this, targetDefeat);        
@@ -347,15 +348,17 @@ namespace Shim
             Helper = helper
           };
           EventManager.OnAgentHelped(this, agentHelped);
+          AgentManager.ModifyBonusActionPoints(agentHelped.Helper, -1);
           AgentManager.ModifyFavor(agentHelped.Helper, agentHelped.FavorReward);
         });
       }
       _creatures.Discard(creature);
     }
-    private bool PerformAttack(Target attacker, Target defender)
+    private bool PerformAttack(Target attacker, Target defender, out AttackEvent attack)
     {
-      AttackEvent attack = new AttackEvent()
+      attack = new AttackEvent()
       {
+        GameState = _state,
         Attacker = attacker,
         Defender = defender,
         Strength = attacker.GetStrengthAgainst(defender),
@@ -388,10 +391,10 @@ namespace Shim
     private void AttackAgent(Agent attacker, Agent defender)
     {
       AgentManager.ModifyActionPoints(attacker, -1);
-      var victory = PerformAttack(attacker, defender);
+      var victory = PerformAttack(attacker, defender, out AttackEvent attack);
       if (!defender.IsDead)
       {
-        PerformAttack(defender, attacker);
+        PerformAttack(defender, attacker, out AttackEvent ripost);
       }
       if (victory && !attacker.IsDead)
       {
