@@ -12,6 +12,7 @@ namespace Shim
     public bool StartingItemEnabled { get; set; }
     public int HitPointsRestoredByHealer { get; set; }
     public int BaseMovementCost { get; set; }
+    public int BaseActionCost { get; set; }
     public int HitPointsAfterResurrection { get; set; }
     public int MaxActionsPerTurn { get; set; }
     public int MaxHitPoints { get; set; }

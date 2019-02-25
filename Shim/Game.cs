@@ -144,7 +144,11 @@ namespace Shim
             CheckActiveAurasExpiration();
           }
           // Prepare next round
-          if (++_state.Round > _parameters.MaxRounds)
+          if (_state.Round < _parameters.MaxRounds)
+          {
+            _state.Round++;
+          }
+          else
           {
             _done = true;
           }
@@ -348,7 +352,7 @@ namespace Shim
             Helper = helper
           };
           EventManager.OnAgentHelped(this, agentHelped);
-          AgentManager.ModifyBonusActionPoints(agentHelped.Helper, -1);
+          AgentManager.ModifyBonusActionPoints(agentHelped.Helper, -1 * _parameters.BaseActionCost);
           AgentManager.ModifyFavor(agentHelped.Helper, agentHelped.FavorReward);
         });
       }
