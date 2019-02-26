@@ -8,13 +8,13 @@ namespace Shim.Entities
     public static void AssignItem(Item item, Agent agent)
     {
       agent.Items.Add(item);
-      Logger.Log($"Item {item.Name} was added to agent {agent.Name}'s inventory");
+      HistoryManager.LogItem(item, agent);
     }
 
     public static void UnassignItem(Item item, Agent agent)
     {
       agent.Items.Remove(item);
-      Logger.Log($"Item {item.Name} was removed from agent {agent.Name}'s inventory");
+      HistoryManager.LogItem(item, agent, true);
     }
 
     public static void AssignTrait(Trait trait, Agent agent)
@@ -22,7 +22,7 @@ namespace Shim.Entities
       if (trait.Stackable || !agent.HasTrait(trait))
       {
         agent.Traits.Add(trait);
-        Logger.Log($"Trait {trait.Name} was granted to agent {agent.Name}");
+        HistoryManager.LogTrait(trait, agent);
       }
     }
 
@@ -31,7 +31,7 @@ namespace Shim.Entities
       if (agent.HasTrait(trait))
       {
         agent.Traits.Remove(trait);
-        Logger.Log($"Trait {trait.Name} was revoked from agent {agent.Name}");
+        HistoryManager.LogTrait(trait, agent, true);
       }
     }
 
@@ -39,13 +39,13 @@ namespace Shim.Entities
     {
       agent.AvailableActionPoints = agent.MaxActionPoints;
       agent.AvailableBonusActionPoints = agent.MaxBonusActionPoints;
-      Logger.Log($"Actions points of {agent.Name} are reset (value: {agent.AvailableActionPoints} AP / {agent.AvailableBonusActionPoints}) bonus AP");
+      HistoryManager.LogMessage($"Actions points are reset (value: {agent.AvailableActionPoints} AP / {agent.AvailableBonusActionPoints}) bonus AP", agent);
     }
 
     public static void ResetHitPoints(Agent agent)
     {
       agent.AvailableHitPoints = agent.MaxHitPoints;
-      Logger.Log($"Hit Points of {agent.Name} are reset (value: {agent.AvailableHitPoints})");
+      HistoryManager.LogMessage($"Hit Points are reset (value: {agent.AvailableHitPoints})", agent);
     }
 
     public static void SetPosition(Agent agent, Tile tile)
@@ -55,7 +55,7 @@ namespace Shim.Entities
         agent.PreviousPosition = agent.Position;
       }
       agent.Position = tile;
-      Logger.Log($"Agent {agent.Name} moves to {tile.Name} ({tile.Type.ToString()})");
+      HistoryManager.LogMessage($"Move to {tile.Name} ({tile.Type.ToString()})", agent);
     }
 
     public static int ModifyActionPoints(Agent agent, int amount)
@@ -66,11 +66,11 @@ namespace Shim.Entities
         agent.AvailableActionPoints += amountGained;
         if (amountGained > 0)
         {
-          Logger.Log($"Agent {agent.Name} gained {amountGained} AP (value: {agent.AvailableActionPoints})");
+          HistoryManager.LogMessage($"{amountGained} AP gained (value: {agent.AvailableActionPoints})", agent);
         }
         else
         {
-          Logger.Log($"Agent {agent.Name} lost {amountGained * -1} AP (value: {agent.AvailableActionPoints})");
+          HistoryManager.LogMessage($"{amountGained * -1} AP lost (value: {agent.AvailableActionPoints})", agent);
         }
       }
       return amountGained;
@@ -84,11 +84,11 @@ namespace Shim.Entities
         agent.AvailableBonusActionPoints += amountGained;
         if (amountGained > 0)
         {
-          Logger.Log($"Agent {agent.Name} gained {amountGained} bonus AP (value: {agent.AvailableBonusActionPoints})");
+          HistoryManager.LogMessage($"{amountGained} bonus AP gained (value: {agent.AvailableBonusActionPoints})", agent);
         }
         else
         {
-          Logger.Log($"Agent {agent.Name} lost {amountGained * -1} bonus AP (value: {agent.AvailableBonusActionPoints})");
+          HistoryManager.LogMessage($"{amountGained * -1} bonus AP lost (value: {agent.AvailableBonusActionPoints})", agent);
         }
       }
       return amountGained;
@@ -102,11 +102,11 @@ namespace Shim.Entities
         agent.AvailableHitPoints += amountGained;
         if (amount > 0)
         {
-          Logger.Log($"Agent {agent.Name} gained {amountGained} HP (value: {agent.AvailableHitPoints})");
+          HistoryManager.LogMessage($"{amountGained} HP gained (value: {agent.AvailableHitPoints})", agent);
         }
         else
         {
-          Logger.Log($"Agent {agent.Name} lost {amountGained * -1} HP (value: {agent.AvailableHitPoints})");
+          HistoryManager.LogMessage($"{amountGained * -1} HP lost (value: {agent.AvailableHitPoints})", agent);
         }
       }
       return amountGained;
@@ -126,12 +126,12 @@ namespace Shim.Entities
           };
           EventManager.OnFavorGained(agent, favorGained);
           agent.Favor += favorGained.Amount;
-          Logger.Log($"Agent {agent.Name} gained {amountGained} favor (value: {agent.Favor})");
+          HistoryManager.LogMessage($"{amountGained} favor gained (value: {agent.Favor})", agent);
         }
         else
         {
           agent.Favor += amountGained;
-          Logger.Log($"Agent {agent.Name} lost {amountGained * -1} favor (value: {agent.Favor})");
+          HistoryManager.LogMessage($"{amountGained * -1} favor lost (value: {agent.Favor})", agent);
         }
       }
       return amountGained;
@@ -160,7 +160,7 @@ namespace Shim.Entities
     public static void RegisterDuelVictory(Agent attacker, Agent defender)
     {
       attacker.DefeatedAgents.Add(defender);
-      Logger.Log($"Duel between {attacker.Name} and {defender.Name} was registered");
+      HistoryManager.LogMessage($"Duel between {attacker.Name} and {defender.Name} was registered");
     }
 
     private static int ValidateStat(int value, int increment, int maxValue)

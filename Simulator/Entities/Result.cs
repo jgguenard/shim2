@@ -7,5 +7,9 @@
     public int Favor { get; set; }
     public string SimulationId { get; set; }
     public virtual Simulation Simulation { get; set; }
+
+    public Result()
+    {
+    }
   }
 }

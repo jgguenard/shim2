@@ -21,7 +21,7 @@ namespace Shim.Entities
 
     protected void Log(object caller, string message, [CallerMemberName]string methodName = "")
     {
-      Logger.Log($"{message} ({caller.GetType()}:{methodName}())");
+      HistoryManager.LogMessage($"{message} ({caller.GetType()}:{methodName}())");
     }
   }
 }

@@ -27,7 +27,7 @@ namespace Shim
       _gameEvents = new Deck<Aura>("Game Events");
       _creatures = new Deck<Creature>("Creatures");
       _done = false;
-      Logger.Init();
+      HistoryManager.Reset();
       BoardManager.Initialize();
     }
     public GameState GetState()
@@ -47,7 +47,6 @@ namespace Shim
         }
       }
       _state.Agents.Add(agent);
-      Logger.Log($"Agent {name} was added to simulation");
     }
     public void AddItem(Item item)
     {
@@ -81,14 +80,14 @@ namespace Shim
       _traps.Add(new Aura()
       {
         Trait = trait,
-        Type = AuraType.Other,
+        Type = AuraType.Trap,
         Scope = ScopeType.Self,
         Expiration = expiration
       });
     }
-    public List<string> GetLog()
+    public List<Entry> GetHistory()
     {
-      return Logger.Lines;
+      return HistoryManager.Entries;
     }
     public void Run()
     {
@@ -103,17 +102,17 @@ namespace Shim
         {
           throw new Exception($"Expecting between {_parameters.MinAgents} and {_parameters.MaxAgents} agents but got {_state.Agents.Count}");
         }
-        Logger.Log("Initialization", true);
+        HistoryManager.LogMessage("Initialization");
 
         // Shuffle decks
-        Logger.Log($"Shuffling decks");
+        HistoryManager.LogMessage($"Shuffling decks");
         _items.Shuffle();
         _traps.Shuffle();
         _blessings.Shuffle();
         _creatures.Shuffle();
 
         // Initialize agents
-        Logger.Log($"Initializing agents");
+        HistoryManager.LogMessage($"Initializing agents");
         for (var i = 0; i < _state.Agents.Count; i++)
         {
           Agent agent = _state.Agents[i];
@@ -128,7 +127,7 @@ namespace Shim
         // Starting item draft
         if (_parameters.StartingItemEnabled)
         {
-          Logger.Log($"Starting items draft");
+          HistoryManager.LogMessage($"Starting items draft");
           _state.Agents.ForEach(agent => DrawItem(agent));
         }
 
@@ -156,7 +155,7 @@ namespace Shim
       }
       catch (Exception ex)
       {
-        Logger.Log($"Exception: {ex.Message}");
+        HistoryManager.LogMessage($"Exception: {ex.Message}");
       }
     }
     private void InitializeAgent(Agent agent, Tile position)
@@ -311,7 +310,7 @@ namespace Shim
     private void DrawEvent()
     {
       Aura gameEvent = _gameEvents.Draw();
-      Logger.Log($"New game event: {gameEvent.Trait.Name}");
+      HistoryManager.LogMessage($"New game event: {gameEvent.Trait.Name}");
       ActivateAura(gameEvent);
     }
     private void DrawTrap(Agent agent)
@@ -368,17 +367,17 @@ namespace Shim
         Strength = attacker.GetStrengthAgainst(defender),
         Defense = defender.GetDefenseAgainst(attacker)
       };
-      Logger.Log($"{attacker.Name} is attacking {defender.Name} ({attack.Strength} STR / {attack.Defense} DEF)");
+      HistoryManager.LogMessage($"{attacker.Name} is attacking {defender.Name} ({attack.Strength} STR / {attack.Defense} DEF)");
       EventManager.OnAttack(this, attack);
       if (attack.Strength < 1)
       {
-        Logger.Log($"{attacker.Name} could not attack");
+        HistoryManager.LogMessage($"{attacker.Name} could not attack");
         return false;
       }
-      Logger.Log($"{attacker.Name} has attacked {defender.Name} ({attack.Strength} STR / {attack.Defense} DEF)");
+      HistoryManager.LogMessage($"{attacker.Name} has attacked {defender.Name} ({attack.Strength} STR / {attack.Defense} DEF)");
       if (attack.Strength > attack.Defense)
       {
-        Logger.Log($"{defender.Name} was defeated by {attacker.Name}");
+        HistoryManager.LogMessage($"{defender.Name} was defeated by {attacker.Name}");
         if (defender is Agent)
         {
           int damageTaken = (attack.Strength - attack.Defense);
@@ -388,7 +387,7 @@ namespace Shim
       }
       else
       {
-        Logger.Log($"{attacker.Name}'s attack was ineffective");
+        HistoryManager.LogMessage($"{attacker.Name}'s attack was ineffective");
       }
       return false;
     }
@@ -407,7 +406,7 @@ namespace Shim
           Target = defender,
           Source = attacker
         };
-        Logger.Log($"Agent {targetDefeated.Source.Name} defeated agent {targetDefeated.Target.Name}");
+        HistoryManager.LogMessage($"Agent {targetDefeated.Source.Name} defeated agent {targetDefeated.Target.Name}");
         EventManager.OnTargetDefeated(this, targetDefeated);
         AgentManager.ModifyFavor(targetDefeated.Source, targetDefeated.FavorReward);
         AgentManager.RegisterDuelVictory(targetDefeated.Source, (Agent)targetDefeated.Target);
@@ -454,7 +453,7 @@ namespace Shim
       Tile gateExit = BoardManager.GetTile(exitId);
       if (gateExit == null)
       {
-        Logger.Log($"Error: Gate exit {exitId} doesn't exists!");
+        HistoryManager.LogMessage($"Error: Gate exit {exitId} doesn't exists!");
         return;
       }
       AgentManager.SetPosition(agent, gateExit);
@@ -478,11 +477,11 @@ namespace Shim
     }
     private void UseItem(Item item, Agent source, Agent target)
     {
-      Logger.Log("UseItem(): not yet implemented");
+      HistoryManager.LogMessage("UseItem(): not yet implemented");
     }
     private void ExecuteTurn()
     {
-      Logger.Log($"Turn {_state.Turn} ({_state.Agents[_state.Turn-1].Name}) of round {_state.Round}", true);
+      HistoryManager.LogMessage($"Start of turn {_state.Turn} of round {_state.Round}", _state.Agents[_state.Turn - 1]);
       AgentManager.ResetActionPoints(_state.TurnAgent);
       bool endOfTurn = false;
       int maxActions = _parameters.MaxActionsPerTurn;
@@ -509,22 +508,22 @@ namespace Shim
             UseItem(nextAction.Item, nextAction.Source, nextAction.Target);
             break;
           case TurnActionType.Stop:
-            Logger.Log($"Agent {_state.TurnAgent.Name} has decided to end his turn");
+            HistoryManager.LogMessage($"Agent has decided to end his turn", _state.TurnAgent);
             endOfTurn = true;
             break;
           case TurnActionType.Undecided:
-            Logger.Log($"Agent {_state.TurnAgent.Name} couldn't decide what to do next");
+            HistoryManager.LogMessage($"Agent couldn't decide what to do next", _state.TurnAgent);
             endOfTurn = true;
             break;
         }
         actionsDone++;
         if (actionsDone > maxActions)
         {
-          Logger.Log($"Agent {_state.TurnAgent.Name} has done too many actions during his turn ({maxActions})");
+          HistoryManager.LogMessage($"Too many actions done during a turn ({maxActions})", _state.TurnAgent);
           endOfTurn = true;
         }
       }
-      Logger.Log($"End of turn: {_state.Turn} ({_state.Agents[_state.Turn - 1].Name}) of round {_state.Round}");
+      HistoryManager.LogMessage($"End of turn {_state.Turn} of round {_state.Round}", _state.Agents[_state.Turn - 1]);
     }
   }
 }

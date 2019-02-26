@@ -42,6 +42,8 @@
   {
     GameEvent,
     Blessing,
+    Trap,
+    Item,
     Other
   }
 
@@ -49,5 +51,14 @@
   {
     Strength,
     Defense
+  }
+
+  public enum LogType
+  {
+    Message,
+    ItemGain,
+    ItemLoss,
+    TraitAdded,
+    TraitRemoved
   }
 }

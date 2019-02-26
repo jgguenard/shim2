@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Shim;
 using Shim.Entities;
+using Shim.Library;
 using Simulator.Entities;
 
 namespace Simulator
@@ -32,93 +34,92 @@ namespace Simulator
         StartingTiles = new string[] { "A1", "M13", "M1", "A13" },
         AgentAttackBaseRange = 4
       };
-      Game game = new Game(parameters);
-      game.AddEvent(TraitManager.DummyTrait);
-      game.AddAgent("Bear", new Trait[] {
+      List<Simulation> simulations = new List<Simulation>();
+      int sCount = 100;
+      for (var s = 0; s < sCount; s++)
+      {
+        Game game = new Game(parameters);
+        game.AddEvent(TraitManager.DummyTrait);
+        game.AddAgent("Bear", new Trait[] {
         TraitManager.BasicAgentTrait,
         TraitManager.DuelQuest,
         TraitManager.HelpQuest,
         TraitManager.BearAspectTrait
       });
-      game.AddAgent("Wolf", new Trait[] {
+        game.AddAgent("Wolf", new Trait[] {
         TraitManager.BasicAgentTrait,
         TraitManager.DuelQuest,
         TraitManager.HelpQuest,
         TraitManager.WolfAspectTrait
       });
-      game.AddAgent("Panther", new Trait[] {
+        game.AddAgent("Panther", new Trait[] {
         TraitManager.BasicAgentTrait,
         TraitManager.DuelQuest,
         TraitManager.HelpQuest,
         TraitManager.PantherAspectTrait
       });
-      game.AddCreature(new Creature("DummyCreature1")
-      {
-        BaseDefense = 0,
-        BaseStrength = 1,
-        FavorReward = 1
-      });
-      game.AddCreature(new Creature("DummyCreature2")
-      {
-        BaseDefense = 0,
-        BaseStrength = 3,
-        FavorReward = 3
-      });
-      game.AddCreature(new Creature("DummyCreature3")
-      {
-        BaseDefense = 2,
-        BaseStrength = 2,
-        FavorReward = 2
-      });
-      game.AddBlessing(TraitManager.DummyBlessing, ExpirationType.Now);
-      game.AddBlessing(TraitManager.DummyBlessing, ExpirationType.Now);
-      game.AddBlessing(TraitManager.DummyBlessing, ExpirationType.Now);
-      game.AddBlessing(TraitManager.DummyBlessing, ExpirationType.Now);
-      game.AddBlessing(TraitManager.DummyBlessing, ExpirationType.Now);
-      game.AddTrap(TraitManager.DummyTrap, ExpirationType.Now);
-      game.AddTrap(TraitManager.DummyTrap, ExpirationType.Now);
-      game.AddTrap(TraitManager.DummyTrap, ExpirationType.Now);
-      game.AddTrap(TraitManager.DummyTrap, ExpirationType.Now);
-      game.AddTrap(TraitManager.DummyTrap, ExpirationType.Now);
-      for( var i = 0; i < 6; i++)
-      {
-        game.AddItem(new Item("Spear")
+        game.AddCreature(new Creature("DummyCreature1")
         {
           BaseDefense = 0,
-          BaseStrength = 2,
-          Trait = TraitManager.DummyItemTrait
+          BaseStrength = 1,
+          FavorReward = 1
         });
-        game.AddItem(new Item("Shield")
+        game.AddCreature(new Creature("DummyCreature2")
+        {
+          BaseDefense = 0,
+          BaseStrength = 3,
+          FavorReward = 3
+        });
+        game.AddCreature(new Creature("DummyCreature3")
         {
           BaseDefense = 2,
-          BaseStrength = 0
+          BaseStrength = 2,
+          FavorReward = 2
         });
-        game.AddItem(new Item("Helm")
+        game.AddBlessing(TraitManager.DummyBlessing, ExpirationType.Now);
+        game.AddBlessing(TraitManager.DummyBlessing, ExpirationType.Now);
+        game.AddBlessing(TraitManager.DummyBlessing, ExpirationType.Now);
+        game.AddBlessing(TraitManager.DummyBlessing, ExpirationType.Now);
+        game.AddBlessing(TraitManager.DummyBlessing, ExpirationType.Now);
+        game.AddTrap(TraitManager.DummyTrap, ExpirationType.Now);
+        game.AddTrap(TraitManager.DummyTrap, ExpirationType.Now);
+        game.AddTrap(TraitManager.DummyTrap, ExpirationType.Now);
+        game.AddTrap(TraitManager.DummyTrap, ExpirationType.Now);
+        game.AddTrap(TraitManager.DummyTrap, ExpirationType.Now);
+        for (var i = 0; i < 6; i++)
         {
-          BaseDefense = 1,
-          BaseStrength = 1
-        });
-        game.AddItem(new Item("Cape")
-        {
-          BaseDefense = 1,
-          BaseStrength = 0
-        });
-        game.AddItem(new Item("Hammer")
-        {
-          BaseDefense = 0,
-          BaseStrength = 1
-        });
-      }
-      game.Run();
-      System.IO.File.WriteAllLines(@".\Output.yaml", game.GetLog());
+          game.AddItem(new Item("Spear")
+          {
+            BaseDefense = 0,
+            BaseStrength = 2,
+            Trait = TraitManager.DummyItemTrait
+          });
+          game.AddItem(new Item("Shield")
+          {
+            BaseDefense = 2,
+            BaseStrength = 0
+          });
+          game.AddItem(new Item("Helm")
+          {
+            BaseDefense = 1,
+            BaseStrength = 1
+          });
+          game.AddItem(new Item("Cape")
+          {
+            BaseDefense = 1,
+            BaseStrength = 0
+          });
+          game.AddItem(new Item("Hammer")
+          {
+            BaseDefense = 0,
+            BaseStrength = 1
+          });
+        }
+        Console.WriteLine($"Running simulation {s + 1} of { sCount }");
+        game.Run();
 
-      var state = game.GetState();
+        var state = game.GetState();
 
-      using (var db = new SimulationContext())
-      {
-        db.Database.OpenConnection();
-        db.Database.EnsureCreated();
-        db.Database.Migrate();
         var simulation = new Simulation()
         {
           SimulationId = Guid.NewGuid().ToString(),
@@ -126,17 +127,40 @@ namespace Simulator
           TotalRounds = state.Round,
           Parameters = JsonConvert.SerializeObject(parameters)
         };
+        var history = game.GetHistory();
+        for(int e = 0; e < history.Count; e++)
+        {
+          Entry entry = history[e];
+          simulation.Logs.Add(new Log()
+          {
+            Index = e + 1,
+            Type = entry.Type.ToString(),
+            Entity = entry.Target?.Name,
+            Value = entry.Value
+          });
+        }
         state.Agents.ForEach(a =>
         {
-          simulation.Results.Add(new Result()
+          Result result = new Result()
           {
             Name = a.Name,
             Favor = a.Favor
-          });
+          };
+          simulation.Results.Add(result);
         });
-        db.Simulations.Add(simulation);
+        simulations.Add(simulation);
+      }
+      Console.WriteLine($"Saving results to database");
+      using (var db = new SimulationContext())
+      {
+        db.Database.OpenConnection();
+        db.Database.EnsureCreated();
+        db.Database.Migrate();
+        db.Truncate();
+        db.Simulations.AddRange(simulations);
         db.SaveChanges();
       }
+      Console.WriteLine($"Done");
     }
   }
 }
