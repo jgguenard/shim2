@@ -477,7 +477,21 @@ namespace Shim
     }
     private void UseItem(Item item, Agent source, Agent target)
     {
-      HistoryManager.LogMessage("UseItem(): not yet implemented");
+      if (item.Aura != null)
+      {
+        if (item.Aura.Trait.ActionPointCost > 0)
+        {
+          if (source == _state.TurnAgent)
+          {
+            AgentManager.ModifyActionPoints(source, -1 * item.Aura.Trait.ActionPointCost);
+          }
+          else
+          {
+            AgentManager.ModifyBonusActionPoints(source, -1 * item.Aura.Trait.ActionPointCost);
+          }
+        }
+        ActivateAura(item.Aura, target);
+      }
     }
     private void ExecuteTurn()
     {

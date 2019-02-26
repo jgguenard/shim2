@@ -92,7 +92,13 @@ namespace Simulator
           {
             BaseDefense = 0,
             BaseStrength = 2,
-            Trait = TraitManager.DummyItemTrait
+            Aura = new Aura()
+            {
+              Trait = TraitManager.DummyItemTrait,
+              Expiration = ExpirationType.Now,
+              Type = AuraType.Item,
+              Scope = ScopeType.Self
+            }
           });
           game.AddItem(new Item("Shield")
           {

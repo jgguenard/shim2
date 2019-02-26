@@ -97,6 +97,17 @@ namespace Shim.Traits
           return;
         }
 
+        // use item if needed
+        var usableItems = e.Source.Items.Where(i => i.Aura != null && i.Aura.Trait.ActionPointCost <= e.Source.AvailableActionPoints).ToList();
+        if (usableItems.Count > 0)
+        {
+          // todo...
+          if (e.Type == TurnActionType.UseItem)
+          {
+            return;
+          }
+        }
+
         // attack a reachable weaker player if we think we can survive the ripost
         var agentAttackRange = e.Parameters.AgentAttackBaseRange; // todo: take modifiers from items and traits into account
         var possibleTargets = e.GameState.Agents

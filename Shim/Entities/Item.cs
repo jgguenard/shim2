@@ -16,7 +16,8 @@ namespace Shim.Entities
       }
     }
     public bool IsRunic { get; set; }
-    public Trait Trait { get; set; }
+    public Aura Aura { get; set; }
+
     public Item(string name)
     {
       Name = name;
