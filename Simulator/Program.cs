@@ -95,6 +95,7 @@ namespace Simulator
             Aura = new Aura()
             {
               Trait = TraitManager.DummyItemTrait,
+              ActionPointCost = 1,
               Expiration = ExpirationType.Now,
               Type = AuraType.Item,
               Scope = ScopeType.Self

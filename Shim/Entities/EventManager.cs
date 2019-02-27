@@ -15,6 +15,7 @@ namespace Shim.Entities
     public static event AgentHelpedEventHandler AgentHelped;
     public static event AuraActivatedEventHandler AuraActivated;
     public static event EvaluateStatEventHandler EvaluateStat;
+    public static event EvaluateItemUseEventHandler EvaluateItemUse;
 
     public static void OnTooManyPermanentItems(object sender, TooManyPermanentItemsEvent args)
     {
@@ -69,6 +70,11 @@ namespace Shim.Entities
     public static void OnEvaluateStat(object sender, EvaluateStatEvent args)
     {
       EvaluateStat?.Invoke(sender, args);
+    }
+
+    public static void OnEvaluateItemUse(object sender, EvaluateItemUseEvent args)
+    {
+      EvaluateItemUse?.Invoke(sender, args);
     }
   }
 }

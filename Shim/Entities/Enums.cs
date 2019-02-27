@@ -47,6 +47,18 @@
     Other
   }
 
+  public enum ItemUseContext
+  {
+    OwnTurnStart,
+    FightingCreature,
+    DuelAsAttacker,
+    DuelAsDefender,
+    OwnTurnEnd,
+    OtherAgentsTurnStart,
+    HelpingOtherAgent,
+    OtherAgentsTurnEnd
+  }
+
   public enum StatType
   {
     Strength,

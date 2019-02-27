@@ -479,15 +479,16 @@ namespace Shim
     {
       if (item.Aura != null)
       {
-        if (item.Aura.Trait.ActionPointCost > 0)
+        HistoryManager.LogMessage($"Agent uses item {item.Name} on {target.Name}", _state.TurnAgent);
+        if (item.Aura.ActionPointCost > 0)
         {
           if (source == _state.TurnAgent)
           {
-            AgentManager.ModifyActionPoints(source, -1 * item.Aura.Trait.ActionPointCost);
+            AgentManager.ModifyActionPoints(source, -1 * item.Aura.ActionPointCost);
           }
           else
           {
-            AgentManager.ModifyBonusActionPoints(source, -1 * item.Aura.Trait.ActionPointCost);
+            AgentManager.ModifyBonusActionPoints(source, -1 * item.Aura.ActionPointCost);
           }
         }
         ActivateAura(item.Aura, target);

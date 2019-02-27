@@ -43,6 +43,37 @@ namespace Shim.Traits
       return true;
     }
 
+    private bool UseItem(TurnActionEvent e, ItemUseContext context)
+    {
+      var usableItems = e.Source.Items.Where(i => i.Aura != null && i.Aura.ActionPointCost <= e.Source.AvailableActionPoints).ToList();
+      if (usableItems.Count > 0)
+      {
+        int bestItemScore = 0;
+        foreach (var item in usableItems)
+        {
+          EvaluateItemUseEvent itemUse = new EvaluateItemUseEvent()
+          {
+            Source = e.Source,
+            Item = item,
+            Context = context
+          };
+          EventManager.OnEvaluateItemUse(this, itemUse);
+          if (itemUse.Score > bestItemScore)
+          {
+            bestItemScore = itemUse.Score;
+            e.Item = item;
+            e.Target = itemUse.Target ?? itemUse.Source; 
+          }
+        }
+        if (e.Item != null)
+        {
+          e.Type = TurnActionType.UseItem;
+          return true;
+        }
+      }
+      return false;
+    }
+
     public void CreateTrip(Agent agent, List<Tile> path)
     {
       _trips[agent] = path;
@@ -98,14 +129,9 @@ namespace Shim.Traits
         }
 
         // use item if needed
-        var usableItems = e.Source.Items.Where(i => i.Aura != null && i.Aura.Trait.ActionPointCost <= e.Source.AvailableActionPoints).ToList();
-        if (usableItems.Count > 0)
+        if (UseItem(e, ItemUseContext.OwnTurnStart))
         {
-          // todo...
-          if (e.Type == TurnActionType.UseItem)
-          {
-            return;
-          }
+          return;
         }
 
         // attack a reachable weaker player if we think we can survive the ripost
@@ -137,7 +163,7 @@ namespace Shim.Traits
         // move to the most valuable point of interest
         var possibleTrips = BoardManager.ReachablePointsOfInterest(e.Source.Position, e.Source.MaxActionPoints, e.Source.PreviousPosition);
         List<Tile> mostValuableTrip = null;
-        int bestScore = 0;
+        int bestTripScore = 0;
         foreach (var trip in possibleTrips)
         {
           var distance = trip.Count;
@@ -195,10 +221,10 @@ namespace Shim.Traits
               score = SCORE_TRAP;
               break;
           }
-          if (score > bestScore)
+          if (score > bestTripScore)
           {
             mostValuableTrip = trip;
-            bestScore = score;
+            bestTripScore = score;
           }
         }
         if (mostValuableTrip != null)
@@ -207,6 +233,12 @@ namespace Shim.Traits
           ResumeTrip(e);
           return;
         }
+      }
+
+      // use item if needed
+      if (UseItem(e, ItemUseContext.OwnTurnEnd))
+      {
+        return;
       }
 
       // stop
