@@ -93,17 +93,6 @@ namespace Raido.Shim.Entities
     {
       BaseDefense = amount;
     }
-    public void AssignTrait(Trait trait)
-    {
-      if (!HasTrait(trait))
-      {
-        Traits.Add(trait);
-      }
-    }
-    public void UnassignTrait(Trait trait)
-    {
-      Traits.Remove(trait);
-    }
     public void AssignEquipment(Equipment equipment)
     {
       Equipment.Add(equipment);

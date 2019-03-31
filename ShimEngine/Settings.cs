@@ -12,6 +12,7 @@
     public int DefaultMaxActionPoints { get; set; }
     public int DefaultBaseDefense { get; set; }
     public int DefaultBaseStrength { get; set; }
+    public bool GameEventEnabled { get; set; }
 
     public Settings()
     {
@@ -25,6 +26,7 @@
       DefaultMaxActionPoints = int.MaxValue;
       DefaultBaseDefense = 0;
       DefaultBaseStrength = 0;
+      GameEventEnabled = true;
     }
   }
 }

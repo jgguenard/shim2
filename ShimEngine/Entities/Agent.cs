@@ -19,6 +19,17 @@ namespace Raido.Shim.Entities
     {
       return Traits.Contains(trait);
     }
+    public virtual void AssignTrait(Trait trait)
+    {
+      if (!HasTrait(trait))
+      {
+        Traits.Add(trait);
+      }
+    }
+    public virtual void UnassignTrait(Trait trait)
+    {
+      Traits.Remove(trait);
+    }
     public virtual int GetDefenseAgainst(Agent target)
     {
       return BaseDefense;

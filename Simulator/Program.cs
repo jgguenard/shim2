@@ -18,6 +18,7 @@ namespace Simulator
         EquipmentSlots = 3,
         DefaultMaxActionPoints = 3,
         MaxHitPoints = 10,
+        MaxRounds = 10
       };
 
       Log.Logger = new LoggerConfiguration()
@@ -31,6 +32,7 @@ namespace Simulator
         .AddSingleton<EventManager>()
         .AddSingleton<Engine>()
         .AddSingleton<BasePlayerTrait>()
+        .AddSingleton<DummyGameEventTrait>()
         .BuildServiceProvider();
 
       var engine = services.GetService<Engine>();
@@ -53,6 +55,8 @@ namespace Simulator
       engine.AddPlayer("Panther", new Trait[] {
         services.GetService<BasePlayerTrait>()
       });
+
+      engine.AddGameEvent(services.GetService<DummyGameEventTrait>());
 
       engine.Run();
       Console.ReadKey();

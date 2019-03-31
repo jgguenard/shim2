@@ -20,7 +20,7 @@ namespace Simulator.Traits
       if (e.Player.HasTrait(this))
       {
         e.BaseDefense += 1;
-        _logger.LogInformation("Player {name} got his BaseStrenght increased by", e.Player.Name, 1);
+        _logger.LogInformation("Player {name} got his BaseStrenght increased by {amount}", e.Player.Name, 1);
       }
     }
   }
