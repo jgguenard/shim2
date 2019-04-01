@@ -1,6 +1,6 @@
 ﻿namespace Raido.Shim.Entities
 {
-  public class Creature : Agent
+  public class Creature : Character
   {
     public int FavorReward { get; set; }
     public int PackSize { get; set; }

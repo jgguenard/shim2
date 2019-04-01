@@ -13,12 +13,15 @@ namespace Simulator
     {
       Settings settings = new Settings
       {
+        MinPlayers = 2,
         MaxPlayers = 6,
         BlessingSlots = 1,
         EquipmentSlots = 3,
         DefaultMaxActionPoints = 3,
         MaxHitPoints = 10,
-        MaxRounds = 10
+        MaxRounds = 10,
+        ExplorationChoices = 3,
+        AvailableFavor = (playerCount) => playerCount * 10
       };
 
       Log.Logger = new LoggerConfiguration()
@@ -55,6 +58,22 @@ namespace Simulator
       engine.AddPlayer("Panther", new Trait[] {
         services.GetService<BasePlayerTrait>()
       });
+
+      engine.AddExplorationChoice(new Equipment("Armor") {
+        BaseDefense = 1
+      }, 5);
+
+      engine.AddExplorationChoice(new Equipment("Weapon")
+      {
+        BaseStrength = 1
+      }, 5);
+
+      engine.AddExplorationChoice(new Creature("Bob")
+      {
+        BaseDefense = 2,
+        BaseStrength = 2,
+        FavorReward = 2
+      }, 5);
 
       engine.AddGameEvent(services.GetService<DummyGameEventTrait>());
 

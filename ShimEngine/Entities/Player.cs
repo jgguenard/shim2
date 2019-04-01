@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Raido.Shim.Entities
 {
-  public class Player : Agent
+  public class Player : Character
   {
     public int MaxHitPoints { get; set; }
     public int HitPoints { get; set; }
@@ -26,7 +26,7 @@ namespace Raido.Shim.Entities
         return (HitPoints == 0);
       }
     }
-    public override int GetStrengthAgainst(Agent target)
+    public override int GetStrengthAgainst(Character target)
     {
       int value = base.GetStrengthAgainst(target);
       Equipment.ForEach((Equipment equipment) =>
@@ -36,7 +36,7 @@ namespace Raido.Shim.Entities
       return value;
     }
 
-    public override int GetDefenseAgainst(Agent target)
+    public override int GetDefenseAgainst(Character target)
     {
       int value = base.GetDefenseAgainst(target);
       Equipment.ForEach((Equipment equipment) =>

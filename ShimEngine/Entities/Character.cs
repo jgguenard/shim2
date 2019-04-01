@@ -2,16 +2,12 @@
 
 namespace Raido.Shim.Entities
 {
-  public class Agent : Entity
+  public class Character : CombatEntity
   {
-    public int BaseStrength { get; set; }
-    public int BaseDefense { get; set; }
     public List<Trait> Traits { get; set; }
 
-    public Agent(string name) : base(name)
+    public Character(string name) : base(name)
     {
-      BaseStrength = 0;
-      BaseDefense = 0;
       Traits = new List<Trait>();
     }
 
@@ -28,16 +24,10 @@ namespace Raido.Shim.Entities
     }
     public virtual void UnassignTrait(Trait trait)
     {
-      Traits.Remove(trait);
-    }
-    public virtual int GetDefenseAgainst(Agent target)
-    {
-      return BaseDefense;
-    }
-
-    public virtual int GetStrengthAgainst(Agent target)
-    {
-      return BaseStrength;
+      if (HasTrait(trait))
+      {
+        Traits.Remove(trait);
+      }
     }
   }
 }

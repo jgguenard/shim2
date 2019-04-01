@@ -17,7 +17,9 @@ namespace Raido.Shim
     private int _round;
     private bool _done;
     private bool _started;
+    private int _availableFavor;
     private readonly Deck<Aura> _gameEvents;
+    private readonly Deck<Entity> _explorationChoices;
     private readonly List<ActiveAura> _activeAuras;
     private readonly List<Player> _players;
 
@@ -36,7 +38,9 @@ namespace Raido.Shim
       _logger = logger;
       _eventManager = eventManager;
       _gameEvents = new Deck<Aura>("Game Events");
+      _explorationChoices = new Deck<Entity>("Exploration");
       _activeAuras = new List<ActiveAura>();
+      _availableFavor = 0;
       _started = false;
       _done = false;
       _round = 1;
@@ -77,6 +81,18 @@ namespace Raido.Shim
       });
     }
 
+    public void AddExplorationChoice(Entity entity, int copies = 1)
+    {
+      if (_started)
+      {
+        throw new Exception($"Cannot add entity after the simulation has started");
+      }
+      for (int i = 0; i < copies; i++)
+      {
+        _explorationChoices.Add(entity);
+      }
+    }
+
     public void Run()
     {
       // simulation state check
@@ -96,6 +112,9 @@ namespace Raido.Shim
       {
         _logger.LogInformation("============= SIMULATION {id} BEGIN ============", sid);
         _started = true;
+
+        _logger.LogInformation("Setting amount of available favor to {i}", _availableFavor);
+        _availableFavor = _settings.AvailableFavor(_players.Count);
 
         // players initialization
         _players.ForEach(player => InitializePlayer(player));
@@ -138,6 +157,24 @@ namespace Raido.Shim
     private void ExecuteTurn()
     {
       _logger.LogInformation("Beginning turn {i}", _turn);
+
+      List<Entity> choices = new List<Entity>();
+      for (int i = 0; i < _settings.ExplorationChoices; i++)
+      {
+        choices.Add(_explorationChoices.Draw());
+      }
+      var playerChoiceIndex = 0;
+      var playerChoice = choices[playerChoiceIndex]; // todo: real decision making
+      if (playerChoice is Equipment)
+      {
+        AssignEquipment((Equipment)playerChoice, TurnPlayer);
+      }
+      else if (playerChoice is Creature)
+      {
+        FightCreature((Creature)playerChoice, TurnPlayer);
+      }
+      choices.RemoveAt(playerChoiceIndex);
+      choices.ForEach(unusedChoice => _explorationChoices.Discard(unusedChoice));
     }
 
     private void DrawEvent()
@@ -145,6 +182,32 @@ namespace Raido.Shim
       Aura gameEvent = _gameEvents.Draw();
       _logger.LogInformation("Activating game event: {e}", gameEvent.Trait.Name);
       ActivateAura(gameEvent);
+    }
+
+    private void AssignEquipment(Equipment equipment, Player player)
+    {
+      bool keep = true;
+      if (player.Equipment.Count == _settings.EquipmentSlots)
+      {
+        // todo: decision to keep and replace or discard...
+        keep = false;
+      }
+      if (keep)
+      {
+        player.AssignEquipment(equipment);
+        _logger.LogInformation("{player} acquired {equipment} (equipment)", player.Name, equipment.Name);
+      }
+      else
+      {
+        _explorationChoices.Discard(equipment);
+      }
+    }
+
+    private void FightCreature(Creature creature, Player player)
+    {
+      _logger.LogInformation("{player} is fighting {creature} (creature)", player.Name, creature.Name);
+      // todo ...
+      _explorationChoices.Discard(creature);
     }
 
     private void CheckActiveAurasExpiration()
@@ -164,7 +227,7 @@ namespace Raido.Shim
       }
     }
 
-    private void ActivateAura(Aura aura, Agent activator = null)
+    private void ActivateAura(Aura aura, Character activator = null)
     {
       ActiveAura activeAura = new ActiveAura()
       {
@@ -200,10 +263,10 @@ namespace Raido.Shim
           break;
       }
 
-      activeAura.Targets.ForEach((Agent agent) =>
+      activeAura.Targets.ForEach((Character character) =>
       {
-        agent.AssignTrait(aura.Trait);
-        if (agent is Player player)
+        character.AssignTrait(aura.Trait);
+        if (character is Player player)
         {
           var auraActivated = new AuraActivatedEvent()
           {
@@ -219,20 +282,22 @@ namespace Raido.Shim
           {
             player.ModifyHitPoints(auraActivated.HitPointsModifier);
           }
-        }
-        _activeAuras.Add(activeAura);
-        if (activeAura.Aura.Expiration == AuraExpiration.Now)
-        {
-          DeactivateAura(activeAura);
+          _logger.LogInformation("Aura {auraName} activated on {character}", activeAura.Aura.Trait.Name, character.Name);
         }
       });
+      _activeAuras.Add(activeAura);
+      if (activeAura.Aura.Expiration == AuraExpiration.Now)
+      {
+        DeactivateAura(activeAura);
+      }
     }
 
     public void DeactivateAura(ActiveAura activeAura)
     {
-      activeAura.Targets.ForEach((Agent agent) =>
+      activeAura.Targets.ForEach((Character character) =>
       {
-        agent.UnassignTrait(activeAura.Aura.Trait);
+        character.UnassignTrait(activeAura.Aura.Trait);
+        _logger.LogInformation("Aura {auraName} expired on {character}", activeAura.Aura.Trait.Name, character.Name);
       });
       if (activeAura.Aura.Source == AuraSource.GameEvent)
       {
