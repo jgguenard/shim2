@@ -113,8 +113,8 @@ namespace Raido.Shim
         _logger.LogInformation("============= SIMULATION {id} BEGIN ============", sid);
         _started = true;
 
-        _logger.LogInformation("Setting amount of available favor to {i}", _availableFavor);
         _availableFavor = _settings.AvailableFavor(_players.Count);
+        _logger.LogInformation($"Setting amount of available favor to {_availableFavor}");
 
         // players initialization
         _players.ForEach(player => InitializePlayer(player));
@@ -206,8 +206,64 @@ namespace Raido.Shim
     private void FightCreature(Creature creature, Player player)
     {
       _logger.LogInformation("{player} is fighting {creature} (creature)", player.Name, creature.Name);
-      // todo ...
+
+      PerformAttack(creature, player, out AttackEvent attack);
+
+      if (!player.IsDead && PerformAttack(player, creature, out AttackEvent ripost))
+      {
+        var targetDefeat = new TargetDefeatedEvent()
+        {
+          Source = player,
+          Target = creature,
+          Helpers = ripost.Helpers,
+          FavorReward = creature.FavorReward
+        };
+        _eventManager.OnTargetDefeated(this, targetDefeat);
+        player.ModifyFavor(targetDefeat.FavorReward);
+        _logger.LogInformation($"{player.Name} gained {targetDefeat.FavorReward} favor for defeating {creature.Name}");
+        targetDefeat.Helpers.ForEach((Player helper) =>
+        {
+          PlayerAssistEvent assist = new PlayerAssistEvent()
+          {
+            Target = creature,
+            Helper = helper
+          };
+          _eventManager.OnPlayerAssist(this, assist);
+          helper.ModifyFavor(assist.FavorReward);
+          _logger.LogInformation($"{player.Name} gained {targetDefeat.FavorReward} favor for assisting");
+        });
+      }
+
       _explorationChoices.Discard(creature);
+    }
+
+    private bool PerformAttack(Character attacker, Character defender, out AttackEvent attack)
+    {
+      attack = new AttackEvent()
+      {
+        Attacker = attacker,
+        Defender = defender,
+        Strength = attacker.GetStrengthAgainst(defender),
+        Defense = defender.GetDefenseAgainst(attacker)
+      };
+      _eventManager.OnAttack(this, attack);
+      _logger.LogInformation($"{attacker.Name} is striking with {attack.Strength} STR against {defender.Name} with {attack.Defense} DEF");
+      if (attack.Strength > attack.Defense)
+      {
+        if (defender is Player player)
+        {
+          int damageTaken = (attack.Strength - attack.Defense);
+          _logger.LogInformation($"{attacker.Name} is inflicting {damageTaken} damage to {defender.Name}");
+          player.ModifyHitPoints(damageTaken * -1);
+        }
+        _logger.LogInformation($"{defender.Name} was defeated by {attacker.Name}");
+        return true;
+      }
+      else
+      {
+        _logger.LogInformation($"{attacker.Name}'s attack was ineffective against {defender.Name}");
+      }
+      return false;
     }
 
     private void CheckActiveAurasExpiration()

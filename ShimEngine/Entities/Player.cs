@@ -41,7 +41,7 @@ namespace Raido.Shim.Entities
       int value = base.GetDefenseAgainst(target);
       Equipment.ForEach((Equipment equipment) =>
       {
-        value += equipment.GetStrengthAgainst(target);
+        value += equipment.GetDefenseAgainst(target);
       });
       return value;
     }

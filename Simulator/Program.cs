@@ -68,9 +68,9 @@ namespace Simulator
         BaseStrength = 1
       }, 5);
 
-      engine.AddExplorationChoice(new Creature("Bob")
+      engine.AddExplorationChoice(new Creature("Berserker")
       {
-        BaseDefense = 2,
+        BaseDefense = 1,
         BaseStrength = 2,
         FavorReward = 2
       }, 5);
