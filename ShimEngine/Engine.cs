@@ -133,6 +133,12 @@ namespace Raido.Shim
           {
             ExecuteTurn();
             CheckActiveAurasExpiration();
+            CheckEndCondition();
+          }
+
+          if (_done)
+          {
+            return;
           }
 
           // Prepare next round
@@ -152,6 +158,15 @@ namespace Raido.Shim
         _logger.LogError(ex, ex.Message);
       }
       _logger.LogInformation("============= SIMULATION {id} END ============", sid);
+    }
+
+    private void CheckEndCondition()
+    {
+      if (_availableFavor == 0 && _turn == _players.Count)
+      {
+        _logger.LogInformation("END: There is no favor left and the last turn has been played");
+        _done = true;
+      }
     }
 
     private void ExecuteTurn()
@@ -186,13 +201,7 @@ namespace Raido.Shim
 
     private void AssignEquipment(Equipment equipment, Player player)
     {
-      bool keep = true;
-      if (player.Equipment.Count == _settings.EquipmentSlots)
-      {
-        // todo: decision to keep and replace or discard...
-        keep = false;
-      }
-      if (keep)
+      if (player.Equipment.Count < _settings.EquipmentSlots)
       {
         player.AssignEquipment(equipment);
         _logger.LogInformation("{player} acquired {equipment} (equipment)", player.Name, equipment.Name);
@@ -200,6 +209,7 @@ namespace Raido.Shim
       else
       {
         _explorationChoices.Discard(equipment);
+        _logger.LogInformation($"{player.Name} could not acquire {equipment.Name} (equipment) because his inventory is full");
       }
     }
 
@@ -219,8 +229,8 @@ namespace Raido.Shim
           FavorReward = creature.FavorReward
         };
         _eventManager.OnTargetDefeated(this, targetDefeat);
-        player.ModifyFavor(targetDefeat.FavorReward);
-        _logger.LogInformation($"{player.Name} gained {targetDefeat.FavorReward} favor for defeating {creature.Name}");
+        _logger.LogInformation($"{creature.Name} was defeated by {player.Name}");
+        RewardFavor(targetDefeat.FavorReward, player, $"defeating {creature.Name}");
         targetDefeat.Helpers.ForEach((Player helper) =>
         {
           PlayerAssistEvent assist = new PlayerAssistEvent()
@@ -228,13 +238,32 @@ namespace Raido.Shim
             Target = creature,
             Helper = helper
           };
-          _eventManager.OnPlayerAssist(this, assist);
-          helper.ModifyFavor(assist.FavorReward);
-          _logger.LogInformation($"{player.Name} gained {targetDefeat.FavorReward} favor for assisting");
+          _eventManager.OnPlayerAssist(this, assist);          
+          RewardFavor(assist.FavorReward, helper, $"assisting {player.Name}");
         });
       }
 
       _explorationChoices.Discard(creature);
+    }
+
+    private void FightPlayer(Player attacker, Player defender)
+    {
+      var victory = PerformAttack(attacker, defender, out AttackEvent attack);
+      if (!defender.IsDead)
+      {
+        PerformAttack(defender, attacker, out AttackEvent ripost);
+      }
+      if (victory && !attacker.IsDead)
+      {
+        var targetDefeated = new TargetDefeatedEvent()
+        {
+          Target = defender,
+          Source = attacker
+        };
+        _eventManager.OnTargetDefeated(this, targetDefeated);
+        _logger.LogInformation($"{targetDefeated.Target.Name} was defeated by {targetDefeated.Source.Name}");
+        RewardFavor(targetDefeated.FavorReward, attacker, $"defeating {targetDefeated.Target.Name}");
+      }
     }
 
     private bool PerformAttack(Character attacker, Character defender, out AttackEvent attack)
@@ -256,7 +285,6 @@ namespace Raido.Shim
           _logger.LogInformation($"{attacker.Name} is inflicting {damageTaken} damage to {defender.Name}");
           player.ModifyHitPoints(damageTaken * -1);
         }
-        _logger.LogInformation($"{defender.Name} was defeated by {attacker.Name}");
         return true;
       }
       else
@@ -264,6 +292,33 @@ namespace Raido.Shim
         _logger.LogInformation($"{attacker.Name}'s attack was ineffective against {defender.Name}");
       }
       return false;
+    }
+
+    private int RewardFavor(int amount, Player player, string reason)
+    {
+      if (amount > 0)
+      {
+        int availableReward = Math.Abs(MathHelper.NormalizeIncrement(_availableFavor, amount * -1, _availableFavor));
+        if (availableReward > 0)
+        {
+          _availableFavor -= availableReward;
+          player.ModifyFavor(availableReward);
+          if (availableReward < amount)
+          {
+            _logger.LogInformation($"{player.Name} should have gained {amount} favor for {reason}, but only {availableReward} was left (now at {player.Favor})");
+          }
+          else
+          {
+            _logger.LogInformation($"{player.Name} gained {availableReward} favor for {reason} (now at {player.Favor})");
+          }
+          return availableReward;
+        }
+        else
+        {
+          _logger.LogInformation($"{player.Name} should have gained {amount} favor for {reason}, but there was nothing left");
+        }        
+      }
+      return 0;
     }
 
     private void CheckActiveAurasExpiration()
@@ -332,7 +387,7 @@ namespace Raido.Shim
           _eventManager.OnAuraActivated(this, auraActivated);
           if (auraActivated.FavorModifier != 0)
           {
-            player.ModifyFavor(auraActivated.FavorModifier);
+            RewardFavor(auraActivated.FavorModifier, player, "gaining aura");
           }
           if (auraActivated.HitPointsModifier != 0)
           {

@@ -7,7 +7,7 @@
       int nextValue = value + increment;
       if (nextValue < 0)
       {
-        return 0;
+        return -1 * value;
       }
       if (nextValue > maxValue)
       {

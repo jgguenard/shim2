@@ -19,9 +19,9 @@ namespace Simulator
         EquipmentSlots = 3,
         DefaultMaxActionPoints = 3,
         MaxHitPoints = 10,
-        MaxRounds = 10,
+        MaxRounds = 12,
         ExplorationChoices = 3,
-        AvailableFavor = (playerCount) => playerCount * 10
+        AvailableFavor = (playerCount) => (playerCount * 2) + 1
       };
 
       Log.Logger = new LoggerConfiguration()
