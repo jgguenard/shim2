@@ -36,6 +36,7 @@ namespace Simulator
         .AddSingleton<Engine>()
         .AddSingleton<BasePlayerTrait>()
         .AddSingleton<DummyGameEventTrait>()
+        .AddSingleton<DummyPotionTrait>()
         .BuildServiceProvider();
 
       var engine = services.GetService<Engine>();
@@ -73,6 +74,17 @@ namespace Simulator
         BaseDefense = 1,
         BaseStrength = 2,
         FavorReward = 2
+      }, 5);
+
+      engine.AddExplorationChoice(new Potion("Potion")
+      {
+        Aura = new Aura()
+        {
+          Source = AuraSource.Potion,
+          Expiration = AuraExpiration.Now,
+          Scope = AuraScope.Self,
+          Trait = services.GetService<DummyPotionTrait>()
+        }
       }, 5);
 
       engine.AddGameEvent(services.GetService<DummyGameEventTrait>());

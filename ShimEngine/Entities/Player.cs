@@ -57,14 +57,6 @@ namespace Raido.Shim.Entities
       if (amountGained != 0)
       {
         HitPoints += amountGained;
-        if (amountGained > 0)
-        {
-          // log gain
-        }
-        else
-        {
-          // log loss
-        }
       }
       return amountGained;
     }
@@ -74,14 +66,6 @@ namespace Raido.Shim.Entities
       if (amountGained != 0)
       {
         Favor += amountGained;
-        if (amountGained > 0)
-        {
-          // log gain
-        }
-        else
-        {
-          // log loss
-        }
       }
       return amountGained;
     }

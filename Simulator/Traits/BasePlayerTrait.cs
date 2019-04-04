@@ -13,6 +13,7 @@ namespace Simulator.Traits
     {
       _logger = logger;
       eventManager.PlayerInit += OnPlayerInit;
+      eventManager.TurnAction += OnTurnAction;
     }
 
     public void OnPlayerInit(object sender, PlayerInitEvent e)
@@ -21,6 +22,22 @@ namespace Simulator.Traits
       {
         e.BaseDefense += 1;
         _logger.LogInformation("Player {name} gained +{amount} to his base DEF (now at {total})", e.Player.Name, 1, e.BaseDefense);
+      }
+    }
+
+    public void OnTurnAction(object sender, TurnActionEvent e)
+    {
+      if (e.State.Player.HasTrait(this))
+      {
+        // todo: real decision making
+        if (e.State.CanExplore)
+        {
+          e.Type = TurnActionType.Explore;
+        }
+        else
+        {
+          e.Type = TurnActionType.Stop;
+        }
       }
     }
   }

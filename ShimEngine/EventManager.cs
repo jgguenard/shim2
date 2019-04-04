@@ -9,6 +9,7 @@ namespace Raido.Shim
     public event AttackEventHandler Attack;
     public event TargetDefeatedEventHandler TargetDefeated;
     public event PlayerAssistEventHandler PlayerAssist;
+    public event TurnActionEventHandler TurnAction;
 
     public void OnPlayerInit(object sender, PlayerInitEvent args)
     {
@@ -33,6 +34,11 @@ namespace Raido.Shim
     public void OnPlayerAssist(object sender, PlayerAssistEvent args)
     {
       PlayerAssist?.Invoke(sender, args);
+    }
+
+    public void OnTurnAction(object sender, TurnActionEvent args)
+    {
+      TurnAction?.Invoke(sender, args);
     }
   }
 }

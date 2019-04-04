@@ -15,7 +15,7 @@ namespace Raido.Shim
 
     private int _turn;
     private int _round;
-    private bool _done;
+    private bool _ended;
     private bool _started;
     private int _availableFavor;
     private readonly Deck<Aura> _gameEvents;
@@ -31,6 +31,7 @@ namespace Raido.Shim
       }
     }
 
+    #region Public Methods
     public Engine(Settings settings, ILogger<Engine> logger, EventManager eventManager)
     {
       _settings = settings;
@@ -42,9 +43,9 @@ namespace Raido.Shim
       _activeAuras = new List<ActiveAura>();
       _availableFavor = 0;
       _started = false;
-      _done = false;
-      _round = 1;
-      _turn = 1;
+      _ended = false;
+      _round = 0;
+      _turn = 0;
     }
 
     public void AddPlayer(string name, Trait[] traits = null)
@@ -119,9 +120,20 @@ namespace Raido.Shim
         // players initialization
         _players.ForEach(player => InitializePlayer(player));
 
-        while (!_done)
+        while (!_ended)
         {
-          _logger.LogInformation("Beginning round {i}", _round);
+          // Prepare new round
+          if (_round < _settings.MaxRounds)
+          {
+            _round++;
+          }
+          else
+          {
+            _ended = true;
+            throw new Exception($"Max number of rounds ({_settings.MaxRounds}) reached");
+          }
+
+          _logger.LogInformation("Round {i}", _round);
         
           if (_settings.GameEventEnabled)
           {
@@ -135,22 +147,6 @@ namespace Raido.Shim
             CheckActiveAurasExpiration();
             CheckEndCondition();
           }
-
-          if (_done)
-          {
-            return;
-          }
-
-          // Prepare next round
-          if (_round < _settings.MaxRounds)
-          {
-            _round++;
-          }
-          else
-          {
-            _done = true;
-            throw new Exception($"Max number of rounds ({_settings.MaxRounds}) reached");
-          }
         }
       } 
       catch (Exception ex)
@@ -159,20 +155,76 @@ namespace Raido.Shim
       }
       _logger.LogInformation("============= SIMULATION {id} END ============", sid);
     }
+    #endregion
 
+    #region Private Methods
     private void CheckEndCondition()
     {
       if (_availableFavor == 0 && _turn == _players.Count)
       {
         _logger.LogInformation("END: There is no favor left and the last turn has been played");
-        _done = true;
+        _ended = true;
       }
     }
 
     private void ExecuteTurn()
     {
-      _logger.LogInformation("Beginning turn {i}", _turn);
+      _logger.LogInformation("Turn {i} of round {r}", _turn, _round);
+      bool endOfTurn = false;
+      int maxActions = _settings.MaxActionsPerTurn;
+      int actionsDone = 0;
+      TurnState turnState = new TurnState() {
+        CanExplore = true,
+        Round = _round,
+        Turn = _turn,
+        Player = TurnPlayer
+      };
+      while (!endOfTurn)
+      {
+        var action = new TurnActionEvent()
+        {
+          Type = TurnActionType.Undecided,
+          State = turnState
+        };
+        _eventManager.OnTurnAction(this, action);
 
+        switch (action.Type)
+        {
+          case TurnActionType.Explore:
+            Explore();
+            turnState.CanExplore = false;
+            break;
+          case TurnActionType.Duel:
+            FightPlayer(TurnPlayer, action.Target);
+            break;
+          case TurnActionType.UseSkill:
+            UseSkill((Equipment)action.Entity, action.Target, TurnPlayer);
+            break;
+          case TurnActionType.UsePotion:
+            UsePotion((Potion)action.Entity, action.Target, TurnPlayer);
+            break;
+          case TurnActionType.Stop:
+            endOfTurn = true;
+            _logger.LogInformation($"{TurnPlayer.Name} has decided to end his turn");
+            break;
+          case TurnActionType.Undecided:
+            endOfTurn = true;
+            _logger.LogWarning($"{TurnPlayer.Name} couldn't decide what to do next");
+            break;
+        }
+
+        actionsDone++;
+        if (actionsDone > maxActions)
+        {
+          endOfTurn = true;
+          _logger.LogWarning($"Turn was ended because too many actions were done ({maxActions})");
+        }
+      }
+    }
+
+    private void Explore()
+    {
+      _logger.LogInformation("{player} is exploring", TurnPlayer.Name);
       List<Entity> choices = new List<Entity>();
       for (int i = 0; i < _settings.ExplorationChoices; i++)
       {
@@ -180,13 +232,17 @@ namespace Raido.Shim
       }
       var playerChoiceIndex = 0;
       var playerChoice = choices[playerChoiceIndex]; // todo: real decision making
-      if (playerChoice is Equipment)
+      if (playerChoice is Equipment equipment)
       {
-        AssignEquipment((Equipment)playerChoice, TurnPlayer);
+        AssignEquipment(equipment, TurnPlayer);
       }
-      else if (playerChoice is Creature)
+      else if (playerChoice is Potion potion)
       {
-        FightCreature((Creature)playerChoice, TurnPlayer);
+        AssignPotion(potion, TurnPlayer);
+      }
+      else if (playerChoice is Creature creature)
+      {
+        FightCreature(creature, TurnPlayer);
       }
       choices.RemoveAt(playerChoiceIndex);
       choices.ForEach(unusedChoice => _explorationChoices.Discard(unusedChoice));
@@ -211,6 +267,25 @@ namespace Raido.Shim
         _explorationChoices.Discard(equipment);
         _logger.LogInformation($"{player.Name} could not acquire {equipment.Name} (equipment) because his inventory is full");
       }
+    }
+
+    private void AssignPotion(Potion potion, Player player)
+    {
+      player.AssignPotion(potion);
+      _logger.LogInformation("{player} acquired {potion} (potion)", player.Name, potion.Name);
+    }
+
+    private void UsePotion(Potion potion, Player target, Player owner)
+    {
+      _logger.LogInformation("{player} is using {potion} (potion) on {target}", owner.Name, potion.Name, target.Name);
+      ActivateAura(potion.Aura, target);
+      owner.UnassignPotion(potion);
+      _explorationChoices.Discard(potion);
+    }
+
+    private void UseSkill(Equipment equipment, Player target, Player owner)
+    {
+
     }
 
     private void FightCreature(Creature creature, Player player)
@@ -432,5 +507,6 @@ namespace Raido.Shim
       player.BaseDefense = playerInit.BaseDefense;
       player.ResetHitPoints();
     }
+    #endregion
   }
 }

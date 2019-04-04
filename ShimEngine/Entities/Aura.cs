@@ -32,10 +32,8 @@ namespace Raido.Shim.Entities
     public AuraScope Scope { get; set; }
     public AuraExpiration Expiration { get; set; }
     public Trait Trait { get; set; }
-    public int ActivationCost { get; set; }
     public Aura()
     {
-      ActivationCost = 0;
       Source = AuraSource.Other;
     }
   }
