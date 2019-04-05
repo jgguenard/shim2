@@ -20,10 +20,9 @@ namespace Raido.Shim.Entities
   public enum AuraSource
   {
     GameEvent,
-    Blessing,
-    Trial,
     Equipment,
     Potion,
+    Quest,
     Other
   }
   public class Aura

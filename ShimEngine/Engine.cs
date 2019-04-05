@@ -16,10 +16,10 @@ namespace Raido.Shim
     private int _turn;
     private int _round;
     private bool _ended;
-    private bool _started;
     private int _availableFavor;
+    private Guid _sid;
     private readonly Deck<Aura> _gameEvents;
-    private readonly Deck<Entity> _explorationChoices;
+    private readonly Deck<Entity> _cards;
     private readonly List<ActiveAura> _activeAuras;
     private readonly List<Player> _players;
 
@@ -39,10 +39,9 @@ namespace Raido.Shim
       _logger = logger;
       _eventManager = eventManager;
       _gameEvents = new Deck<Aura>("Game Events");
-      _explorationChoices = new Deck<Entity>("Exploration");
+      _cards = new Deck<Entity>("Exploration");
       _activeAuras = new List<ActiveAura>();
       _availableFavor = 0;
-      _started = false;
       _ended = false;
       _round = 0;
       _turn = 0;
@@ -50,11 +49,6 @@ namespace Raido.Shim
 
     public void AddPlayer(string name, Trait[] traits = null)
     {
-      if (_started)
-      {
-        throw new Exception($"Cannot add player after the simulation has started");
-      }
-
       Player player = new Player(name);
       if (traits != null) 
       {
@@ -68,11 +62,6 @@ namespace Raido.Shim
 
     public void AddGameEvent(Trait trait)
     {
-      if (_started)
-      {
-        throw new Exception($"Cannot add game events after the simulation has started");
-      }
-
       _gameEvents.Add(new Aura()
       {
         Source = AuraSource.GameEvent,
@@ -82,82 +71,105 @@ namespace Raido.Shim
       });
     }
 
-    public void AddExplorationChoice(Entity entity, int copies = 1)
+    public void AddCard(Entity entity, int copies = 1)
     {
-      if (_started)
-      {
-        throw new Exception($"Cannot add entity after the simulation has started");
-      }
       for (int i = 0; i < copies; i++)
       {
-        _explorationChoices.Add(entity);
+        _cards.Add(entity);
       }
     }
 
-    public void Run()
+    public void Run(int simulations = 1)
     {
-      // simulation state check
-      if (_started)
-      {
-        throw new Exception($"Cannot run the same simulation twice");
-      }
-
       // integrity checks
       if (_players.Count < _settings.MinPlayers || _players.Count > _settings.MaxPlayers)
       {
         throw new Exception($"Expected between {_settings.MinPlayers} and {_settings.MaxPlayers} players but got {_players.Count}");
       }
 
-      Guid sid = Guid.NewGuid();
-      try
+      _logger.LogInformation("============= SHIM ============");
+      _logger.LogInformation($"Running {simulations} simulations with {_players.Count} players and {_settings.AvailableFavor(_players.Count)} favor");
+
+      _players.ForEach(p => InitializePlayer(p));
+
+      for (int i = 0; i < simulations; i++)
       {
-        _logger.LogInformation("============= SIMULATION {id} BEGIN ============", sid);
-        _started = true;
+        ResetState();
 
-        _availableFavor = _settings.AvailableFavor(_players.Count);
-        _logger.LogInformation($"Setting amount of available favor to {_availableFavor}");
-
-        // players initialization
-        _players.ForEach(player => InitializePlayer(player));
-
-        while (!_ended)
+        _logger.LogInformation("============= SIMULATION #{i} ({id}) - BEGIN ============", i + 1, _sid);
+        try
         {
-          // Prepare new round
-          if (_round < _settings.MaxRounds)
-          {
-            _round++;
-          }
-          else
-          {
-            _ended = true;
-            throw new Exception($"Max number of rounds ({_settings.MaxRounds}) reached");
-          }
-
-          _logger.LogInformation("Round {i}", _round);
-        
-          if (_settings.GameEventEnabled)
-          {
-            DrawEvent();
-          }
-
-          // Play turns
-          for (_turn = 1; _turn <= _players.Count; _turn++)
-          {
-            ExecuteTurn();
-            CheckActiveAurasExpiration();
-            CheckEndCondition();
-          }
+          RunSimulation();
         }
-      } 
-      catch (Exception ex)
-      {
-        _logger.LogError(ex, ex.Message);
+        catch (Exception ex)
+        {
+          _logger.LogError(ex, ex.Message);
+        }
+        _logger.LogInformation("============= SIMULATION #{i} ({id}) - END ============", i + 1, _sid);
       }
-      _logger.LogInformation("============= SIMULATION {id} END ============", sid);
+      _logger.LogInformation("============= END OF SIMULATIONS ============");
     }
     #endregion
 
     #region Private Methods
+    private void ResetState()
+    {
+      _players.ForEach(player =>
+      {
+        player.HitPoints = player.MaxHitPoints;
+        player.Favor = 0;
+        player.Equipment.ForEach(e => _cards.Discard(e));
+        player.Potions.ForEach(e => _cards.Discard(e));
+        player.Quests.ForEach(e => _cards.Discard(e));
+        player.Equipment.Clear();
+        player.Potions.Clear();
+        player.Quests.Clear();
+      });
+      for (int i = 0; i < _activeAuras.Count; i++)
+      {
+        DeactivateAura(_activeAuras[i]);
+      }
+      _gameEvents.Shuffle();
+      _cards.Shuffle();
+      _availableFavor = _settings.AvailableFavor(_players.Count);
+      _ended = false;
+      _round = 0;
+      _turn = 0;
+      _sid = Guid.NewGuid();
+    }
+
+    private void RunSimulation()
+    {
+      while (!_ended)
+      {
+        // Prepare new round
+        if (_round < _settings.MaxRounds)
+        {
+          _round++;
+        }
+        else
+        {
+          _ended = true;
+          throw new Exception($"Max number of rounds ({_settings.MaxRounds}) reached");
+        }
+
+        _logger.LogInformation("Round {i}", _round);
+
+        if (_settings.GameEventEnabled)
+        {
+          DrawEvent();
+        }
+
+        // Execute turns
+        for (_turn = 1; _turn <= _players.Count; _turn++)
+        {
+          ExecuteTurn();
+          CheckActiveAurasExpiration();
+          CheckEndCondition();
+        }
+      }
+    }
+
     private void CheckEndCondition()
     {
       if (_availableFavor == 0 && _turn == _players.Count)
@@ -228,7 +240,7 @@ namespace Raido.Shim
       List<Entity> choices = new List<Entity>();
       for (int i = 0; i < _settings.ExplorationChoices; i++)
       {
-        choices.Add(_explorationChoices.Draw());
+        choices.Add(_cards.Draw());
       }
       var playerChoiceIndex = 0;
       var playerChoice = choices[playerChoiceIndex]; // todo: real decision making
@@ -244,8 +256,12 @@ namespace Raido.Shim
       {
         FightCreature(creature, TurnPlayer);
       }
+      else if (playerChoice is Quest quest)
+      {
+        AssignQuest(quest, TurnPlayer);
+      }
       choices.RemoveAt(playerChoiceIndex);
-      choices.ForEach(unusedChoice => _explorationChoices.Discard(unusedChoice));
+      choices.ForEach(unusedChoice => _cards.Discard(unusedChoice));
     }
 
     private void DrawEvent()
@@ -255,23 +271,30 @@ namespace Raido.Shim
       ActivateAura(gameEvent);
     }
 
+    private void AssignQuest(Quest quest, Player player)
+    {
+      _logger.LogInformation("{player} is assigned to a new quest: {quest}", player.Name, quest.Name);
+      player.Quests.Add(quest);
+      ActivateAura(quest.Aura, player);
+    }
+
     private void AssignEquipment(Equipment equipment, Player player)
     {
       if (player.Equipment.Count < _settings.EquipmentSlots)
       {
-        player.AssignEquipment(equipment);
+        player.Equipment.Add(equipment);
         _logger.LogInformation("{player} acquired {equipment} (equipment)", player.Name, equipment.Name);
       }
       else
       {
-        _explorationChoices.Discard(equipment);
+        _cards.Discard(equipment);
         _logger.LogInformation($"{player.Name} could not acquire {equipment.Name} (equipment) because his inventory is full");
       }
     }
 
     private void AssignPotion(Potion potion, Player player)
     {
-      player.AssignPotion(potion);
+      player.Potions.Add(potion);
       _logger.LogInformation("{player} acquired {potion} (potion)", player.Name, potion.Name);
     }
 
@@ -279,8 +302,8 @@ namespace Raido.Shim
     {
       _logger.LogInformation("{player} is using {potion} (potion) on {target}", owner.Name, potion.Name, target.Name);
       ActivateAura(potion.Aura, target);
-      owner.UnassignPotion(potion);
-      _explorationChoices.Discard(potion);
+      owner.Potions.Remove(potion);
+      _cards.Discard(potion);
     }
 
     private void UseSkill(Equipment equipment, Player target, Player owner)
@@ -296,6 +319,7 @@ namespace Raido.Shim
 
       if (!player.IsDead && PerformAttack(player, creature, out AttackEvent ripost))
       {
+        _logger.LogInformation($"{creature.Name} was defeated by {player.Name}");
         var targetDefeat = new TargetDefeatedEvent()
         {
           Source = player,
@@ -304,7 +328,6 @@ namespace Raido.Shim
           FavorReward = creature.FavorReward
         };
         _eventManager.OnTargetDefeated(this, targetDefeat);
-        _logger.LogInformation($"{creature.Name} was defeated by {player.Name}");
         RewardFavor(targetDefeat.FavorReward, player, $"defeating {creature.Name}");
         targetDefeat.Helpers.ForEach((Player helper) =>
         {
@@ -317,8 +340,12 @@ namespace Raido.Shim
           RewardFavor(assist.FavorReward, helper, $"assisting {player.Name}");
         });
       }
+      else
+      {
+        _logger.LogInformation($"{player.Name} was defeated by {creature.Name}");
+      }
 
-      _explorationChoices.Discard(creature);
+      _cards.Discard(creature);
     }
 
     private void FightPlayer(Player attacker, Player defender)
@@ -357,8 +384,8 @@ namespace Raido.Shim
         if (defender is Player player)
         {
           int damageTaken = (attack.Strength - attack.Defense);
-          _logger.LogInformation($"{attacker.Name} is inflicting {damageTaken} damage to {defender.Name}");
           player.ModifyHitPoints(damageTaken * -1);
+          _logger.LogInformation($"{attacker.Name} has inflicted {damageTaken} damage to {defender.Name} ({player.HitPoints} HP left)");
         }
         return true;
       }
@@ -505,7 +532,6 @@ namespace Raido.Shim
       player.MaxHitPoints = playerInit.MaxHitPoints;
       player.BaseStrength = playerInit.BaseStrength;
       player.BaseDefense = playerInit.BaseDefense;
-      player.ResetHitPoints();
     }
     #endregion
   }

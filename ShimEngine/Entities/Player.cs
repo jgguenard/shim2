@@ -10,6 +10,7 @@ namespace Raido.Shim.Entities
     public int Favor { get; set; }
     public List<Equipment> Equipment { get; set; }
     public List<Potion> Potions { get; set; }
+    public List<Quest> Quests { get; set; }
 
     public Player(string name) : base(name)
     {
@@ -18,6 +19,7 @@ namespace Raido.Shim.Entities
       Favor = 0;
       Equipment = new List<Equipment>();
       Potions = new List<Potion>();
+      Quests = new List<Quest>();
     }
     public bool IsDead
     {
@@ -46,11 +48,6 @@ namespace Raido.Shim.Entities
       return value;
     }
 
-    public void ResetHitPoints()
-    {
-      HitPoints = MaxHitPoints;
-    }
-
     public int ModifyHitPoints(int amount)
     {
       int amountGained = MathHelper.NormalizeIncrement(HitPoints, amount, MaxHitPoints);
@@ -68,30 +65,6 @@ namespace Raido.Shim.Entities
         Favor += amountGained;
       }
       return amountGained;
-    }
-    public void SetBaseStrength(int amount)
-    {
-      BaseStrength = amount;
-    }
-    public void SetBaseDefense(int amount)
-    {
-      BaseDefense = amount;
-    }
-    public void AssignEquipment(Equipment equipment)
-    {
-      Equipment.Add(equipment);
-    }
-    public void UnassignEquipment(Equipment equipment)
-    {
-      Equipment.Remove(equipment);
-    }
-    public void AssignPotion(Potion potion)
-    {
-      Potions.Add(potion);
-    }
-    public void UnassignPotion(Potion potion)
-    {
-      Potions.Remove(potion);
     }
   }
 }

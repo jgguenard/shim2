@@ -19,7 +19,7 @@ namespace Simulator
         EquipmentSlots = 3,
         DefaultMaxActionPoints = 3,
         MaxHitPoints = 10,
-        MaxRounds = 12,
+        MaxRounds = 20,
         ExplorationChoices = 3,
         AvailableFavor = (playerCount) => (playerCount * 2) + 1
       };
@@ -37,6 +37,7 @@ namespace Simulator
         .AddSingleton<BasePlayerTrait>()
         .AddSingleton<DummyGameEventTrait>()
         .AddSingleton<DummyPotionTrait>()
+        .AddSingleton<DummyQuestTrait>()
         .BuildServiceProvider();
 
       var engine = services.GetService<Engine>();
@@ -60,23 +61,23 @@ namespace Simulator
         services.GetService<BasePlayerTrait>()
       });
 
-      engine.AddExplorationChoice(new Equipment("Armor") {
+      engine.AddCard(new Equipment("Armor") {
         BaseDefense = 1
       }, 5);
 
-      engine.AddExplorationChoice(new Equipment("Weapon")
+      engine.AddCard(new Equipment("Weapon")
       {
         BaseStrength = 1
       }, 5);
 
-      engine.AddExplorationChoice(new Creature("Berserker")
+      engine.AddCard(new Creature("Berserker")
       {
         BaseDefense = 1,
         BaseStrength = 2,
         FavorReward = 2
       }, 5);
 
-      engine.AddExplorationChoice(new Potion("Potion")
+      engine.AddCard(new Potion("Potion")
       {
         Aura = new Aura()
         {
@@ -87,9 +88,11 @@ namespace Simulator
         }
       }, 5);
 
+      engine.AddCard(new Quest("Quest", services.GetService<DummyQuestTrait>()), 5);
+
       engine.AddGameEvent(services.GetService<DummyGameEventTrait>());
 
-      engine.Run();
+      engine.Run(2);
       Console.ReadKey();
     }
   }
