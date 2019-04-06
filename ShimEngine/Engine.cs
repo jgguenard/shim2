@@ -22,6 +22,7 @@ namespace Raido.Shim
     private readonly Deck<Entity> _cards;
     private readonly List<ActiveAura> _activeAuras;
     private readonly List<Player> _players;
+    private readonly List<Summary> _summaries;
 
     public Player TurnPlayer
     {
@@ -41,6 +42,7 @@ namespace Raido.Shim
       _gameEvents = new Deck<Aura>("Game Events");
       _cards = new Deck<Entity>("Exploration");
       _activeAuras = new List<ActiveAura>();
+      _summaries = new List<Summary>();
       _availableFavor = 0;
       _ended = false;
       _round = 0;
@@ -92,6 +94,8 @@ namespace Raido.Shim
 
       _players.ForEach(p => InitializePlayer(p));
 
+      _summaries.Clear();
+
       for (int i = 0; i < simulations; i++)
       {
         ResetState();
@@ -105,6 +109,7 @@ namespace Raido.Shim
         {
           _logger.LogError(ex, ex.Message);
         }
+        GenerateSummary();
         _logger.LogInformation("============= SIMULATION #{i} ({id}) - END ============", i + 1, _sid);
       }
       _logger.LogInformation("============= END OF SIMULATIONS ============");
@@ -112,6 +117,24 @@ namespace Raido.Shim
     #endregion
 
     #region Private Methods
+    private void GenerateSummary()
+    {
+      Summary summary = new Summary()
+      {
+        PlayerCount = _players.Count,
+        Rounds = _round
+      };
+      _players.ForEach(p => summary.FavorByPlayer[p.Name] = p.Favor);
+      _summaries.Add(summary);
+
+      var favorSegments = new List<string>();
+      foreach (var key in summary.FavorByPlayer.Keys)
+      {
+        favorSegments.Add($"{key}={summary.FavorByPlayer[key]}");
+      }
+      _logger.LogInformation($"SUMMARY: Players: {summary.PlayerCount} | Rounds played: {summary.Rounds} | Favor: {string.Join(",", favorSegments)}");
+    }
+
     private void ResetState()
     {
       _players.ForEach(player =>

@@ -92,7 +92,7 @@ namespace Simulator
 
       engine.AddGameEvent(services.GetService<DummyGameEventTrait>());
 
-      engine.Run(2);
+      engine.Run();
       Console.ReadKey();
     }
   }
