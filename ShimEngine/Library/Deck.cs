@@ -7,23 +7,33 @@ namespace Raido.Shim.Library
   {
     private List<T> _discarded;
     private List<T> _available;
+    private List<string> _discardedTag;
     private string _name;
 
     public Deck(string name)
     {
       _available = new List<T>();
       _discarded = new List<T>();
+      _discardedTag = new List<string>();
       _name = name;
     }
 
-    public List<T> GetAll()
+    public List<T> Available()
     {
       return _available;
     }
 
-    public T Get(int index)
+    public List<T> Discarded(string tag = "")
     {
-      return _available[index];
+      List<T> items = new List<T>();
+      for (int t = 0; t < _discardedTag.Count; t++)
+      {
+        if (_discardedTag[t] == tag)
+        {
+          items.Add(_discarded[t]);
+        }
+      }
+      return items;
     }
 
     public T Draw()
@@ -38,11 +48,12 @@ namespace Raido.Shim.Library
         {
           _available = _discarded;
           _discarded = new List<T>();
+          _discardedTag = new List<string>();
           Shuffle();
         }
       }
-      var item = _available[0];
-      _available.RemoveAt(0);
+      var item = _available[_available.Count - 1];
+      _available.RemoveAt(_available.Count - 1);
       return item;
     }
 
@@ -51,9 +62,23 @@ namespace Raido.Shim.Library
       _available.Add(item);
     }
 
-    public void Discard(T item)
+    public void Discard(T item, string tag = "")
     {
       _discarded.Add(item);
+      _discardedTag.Add(tag);
+    }
+
+    public T Undiscard(string tag = "")
+    {
+      int index = _discardedTag.FindLastIndex(t => t == tag);
+      if (index < 0)
+      {
+        return default(T);
+      }
+      var item = _discarded[index];
+      _discarded.RemoveAt(index);
+      _discardedTag.RemoveAt(index);
+      return item;
     }
 
     public void Shuffle()

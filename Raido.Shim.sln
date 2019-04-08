@@ -3,14 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.168
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Shim", "Shim\Shim.csproj", "{923F2D81-CE03-42ED-BA96-6D256DBBB551}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Simulator", "Simulator\Simulator.csproj", "{5CAAA292-D9D2-4324-B3CA-909F5B65C237}"
-	ProjectSection(ProjectDependencies) = postProject
-		{923F2D81-CE03-42ED-BA96-6D256DBBB551} = {923F2D81-CE03-42ED-BA96-6D256DBBB551}
-	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShimEngine", "ShimEngine\ShimEngine.csproj", "{A3A5EA3D-3F2D-4641-8717-FD519A149190}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Shim", "ShimEngine\Shim.csproj", "{A3A5EA3D-3F2D-4641-8717-FD519A149190}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -18,10 +13,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{923F2D81-CE03-42ED-BA96-6D256DBBB551}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{923F2D81-CE03-42ED-BA96-6D256DBBB551}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{923F2D81-CE03-42ED-BA96-6D256DBBB551}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{923F2D81-CE03-42ED-BA96-6D256DBBB551}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5CAAA292-D9D2-4324-B3CA-909F5B65C237}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5CAAA292-D9D2-4324-B3CA-909F5B65C237}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5CAAA292-D9D2-4324-B3CA-909F5B65C237}.Release|Any CPU.ActiveCfg = Release|Any CPU

@@ -10,6 +10,7 @@ namespace Raido.Shim
     public event TargetDefeatedEventHandler TargetDefeated;
     public event PlayerAssistEventHandler PlayerAssist;
     public event TurnActionEventHandler TurnAction;
+    public event ExplorationEventHandler Exploration;
 
     public void OnPlayerInit(object sender, PlayerInitEvent args)
     {
@@ -39,6 +40,11 @@ namespace Raido.Shim
     public void OnTurnAction(object sender, TurnActionEvent args)
     {
       TurnAction?.Invoke(sender, args);
+    }
+
+    public void OnExploration(object sender, ExplorationEvent args)
+    {
+      Exploration?.Invoke(sender, args);
     }
   }
 }

@@ -63,12 +63,12 @@ namespace Simulator
 
       engine.AddCard(new Equipment("Armor") {
         BaseDefense = 1
-      }, 5);
+      }, 3);
 
       engine.AddCard(new Equipment("Weapon")
       {
         BaseStrength = 1
-      }, 5);
+      }, 7);
 
       engine.AddCard(new Creature("Berserker")
       {
@@ -86,9 +86,9 @@ namespace Simulator
           Scope = AuraScope.Self,
           Trait = services.GetService<DummyPotionTrait>()
         }
-      }, 5);
+      }, 2);
 
-      engine.AddCard(new Quest("Quest", services.GetService<DummyQuestTrait>()), 5);
+      engine.AddCard(new Quest("Quest", services.GetService<DummyQuestTrait>()), 3);
 
       engine.AddGameEvent(services.GetService<DummyGameEventTrait>());
 

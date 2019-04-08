@@ -212,7 +212,8 @@ namespace Raido.Shim
         CanExplore = true,
         Round = _round,
         Turn = _turn,
-        Player = TurnPlayer
+        Player = TurnPlayer,
+        DiscardedChoices = _cards.Discarded(TurnPlayer.Name)
       };
       while (!endOfTurn)
       {
@@ -229,8 +230,12 @@ namespace Raido.Shim
             Explore();
             turnState.CanExplore = false;
             break;
+          case TurnActionType.Visit:
+            Visit(action.Entity);
+            turnState.CanExplore = false;
+            break;
           case TurnActionType.Duel:
-            FightPlayer(TurnPlayer, action.Target);
+            Duel(TurnPlayer, action.Target);
             break;
           case TurnActionType.UseSkill:
             UseSkill((Equipment)action.Entity, action.Target, TurnPlayer);
@@ -260,13 +265,30 @@ namespace Raido.Shim
     private void Explore()
     {
       _logger.LogInformation("{player} is exploring", TurnPlayer.Name);
-      List<Entity> choices = new List<Entity>();
+      ExplorationEvent exploration = new ExplorationEvent()
+      {
+        Player = TurnPlayer,
+        Choices = new List<Entity>(),
+        PlayerChoiceIndex = 0
+      };
       for (int i = 0; i < _settings.ExplorationChoices; i++)
       {
-        choices.Add(_cards.Draw());
+        exploration.Choices.Add(_cards.Draw());
       }
-      var playerChoiceIndex = 0;
-      var playerChoice = choices[playerChoiceIndex]; // todo: real decision making
+      _eventManager.OnExploration(this, exploration);
+      for (int i = 0; i < exploration.Choices.Count; i++)
+      {
+        if (i != exploration.PlayerChoiceIndex)
+        {
+          _cards.Discard(exploration.Choices[i], TurnPlayer.Name);
+        }
+      }
+      var playerChoice = exploration.Choices[exploration.PlayerChoiceIndex];
+      Visit(playerChoice);
+    }
+
+    private void Visit(Entity playerChoice)
+    {
       if (playerChoice is Equipment equipment)
       {
         AssignEquipment(equipment, TurnPlayer);
@@ -283,8 +305,6 @@ namespace Raido.Shim
       {
         AssignQuest(quest, TurnPlayer);
       }
-      choices.RemoveAt(playerChoiceIndex);
-      choices.ForEach(unusedChoice => _cards.Discard(unusedChoice));
     }
 
     private void DrawEvent()
@@ -371,7 +391,7 @@ namespace Raido.Shim
       _cards.Discard(creature);
     }
 
-    private void FightPlayer(Player attacker, Player defender)
+    private void Duel(Player attacker, Player defender)
     {
       var victory = PerformAttack(attacker, defender, out AttackEvent attack);
       if (!defender.IsDead)
